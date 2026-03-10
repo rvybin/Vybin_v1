@@ -21,6 +21,25 @@ interface ProfileTabProps {
   onEditPreferences: () => void;
 }
 
+function dedupeNotifications<T extends { user_id?: string; title?: string | null; body?: string | null; url?: string | null }>(
+  rows: T[]
+) {
+  const seen = new Set<string>();
+
+  return rows.filter((row) => {
+    const key = [
+      row.user_id ?? "",
+      row.title ?? "",
+      row.body ?? "",
+      row.url ?? "",
+    ].join("::");
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
   const { user, signOut: contextSignOut } = useAuth();
 
@@ -96,7 +115,7 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
 
     const { data, error } = await supabase
       .from("notifications")
-      .select("id, title, body, url, created_at, read")
+      .select("id, user_id, title, body, url, created_at, read")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -105,7 +124,7 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
       return;
     }
 
-    setNotifications(data || []);
+    setNotifications(dedupeNotifications(data || []));
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
