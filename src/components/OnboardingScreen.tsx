@@ -15,12 +15,23 @@ interface OnboardingScreenProps {
 
 const MCGILL_RED = "#ED1B2F";
 const LIGHT_BG = "#F6F7F9";
+const FALLBACK_INTERESTS: Interest[] = [
+  { id: "wellness-mental-health", name: "Wellness & Mental Health", icon: "heart" },
+  { id: "career-professional-development", name: "Career & Professional Development", icon: "briefcase" },
+  { id: "workshops-skill-building", name: "Workshops & Skill Building", icon: "brain" },
+  { id: "social-community-events", name: "Social & Community Events", icon: "megaphone" },
+  { id: "arts-creative-activities", name: "Arts & Creative Activities", icon: "palette" },
+  { id: "academic-support-research", name: "Academic Support & Research", icon: "graduation-cap" },
+  { id: "international-student-services", name: "International Student Services", icon: "cog" },
+  { id: "leadership-personal-growth", name: "Leadership & Personal Growth", icon: "rocket" },
+];
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [interests, setInterests] = useState<Interest[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [interestWarning, setInterestWarning] = useState("");
   const { user } = useAuth();
 
   useEffect(() => {
