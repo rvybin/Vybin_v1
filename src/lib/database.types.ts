@@ -259,31 +259,45 @@ export type Database = {
         Row: {
           body: string | null
           created_at: string | null
+          event_id: string | null
           id: string
           read: boolean | null
           title: string | null
+          type: string | null
           url: string | null
           user_id: string
         }
         Insert: {
           body?: string | null
           created_at?: string | null
+          event_id?: string | null
           id?: string
           read?: boolean | null
           title?: string | null
+          type?: string | null
           url?: string | null
           user_id?: string
         }
         Update: {
           body?: string | null
           created_at?: string | null
+          event_id?: string | null
           id?: string
           read?: boolean | null
           title?: string | null
+          type?: string | null
           url?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
 
       profiles: {
