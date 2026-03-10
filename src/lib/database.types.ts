@@ -420,6 +420,10 @@ export type Database = {
       call_process_outbox: { Args: never; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      vybin_generate_saved_reminders: {
+        Args: { p_now?: string; p_window_hours?: number }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
