@@ -37,34 +37,44 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   useEffect(() => {
     if (!user) return;
     loadInterestsAndPrefs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadInterestsAndPrefs = async () => {
-    if (!user) return; // ✅ ensures user is non-null in this function
+    if (!user) return;
 
     try {
-      const [{ data: allInterests }, { data: prefs }] = await Promise.all([
+      const [{ data: allInterests, error: interestsError }, { data: prefs, error: prefsError }] = await Promise.all([
         supabase.from("interests").select("*").order("name"),
-        supabase.from("user_preferences").select("interest_name").eq("user_id", user.id), // ✅ fixed
+        supabase.from("user_preferences").select("interest_name").eq("user_id", user.id),
       ]);
 
-      setInterests((allInterests ?? []) as Interest[]); // ✅ fixed
+      if (interestsError) throw interestsError;
+      if (prefsError) throw prefsError;
 
-      if (prefs && prefs.length > 0 && allInterests?.length) {
-        const matchedIds = allInterests
-          .filter((i: any) =>
+      const availableInterests = ((allInterests?.length ? allInterests : FALLBACK_INTERESTS) ?? []) as Interest[];
+      setInterests(availableInterests);
+      setInterestWarning(
+        allInterests?.length
+          ? ""
+          : "Interest options were missing from the database, so fallback options are being shown until the seed SQL is applied."
+      );
+
+      if (prefs && prefs.length > 0 && availableInterests.length) {
+        const matchedIds = availableInterests
+          .filter((interest) =>
             prefs.some(
-              (p: any) =>
-                (p.interest_name ?? "").trim().toLowerCase() === (i.name ?? "").trim().toLowerCase()
+              (pref: any) =>
+                (pref.interest_name ?? "").trim().toLowerCase() === (interest.name ?? "").trim().toLowerCase()
             )
           )
-          .map((i: any) => i.id);
+          .map((interest) => interest.id);
 
         setSelectedInterests(new Set(matchedIds));
       }
     } catch (error) {
       console.error("Error loading interests or prefs:", error);
+      setInterests(FALLBACK_INTERESTS);
+      setInterestWarning("Failed to load interests from the database, so fallback options are being shown.");
     } finally {
       setLoading(false);
     }
@@ -88,10 +98,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       setSaving(true);
 
       const selectedInterestNames = Array.from(selectedInterests)
-        .map((id) => interests.find((i) => i.id === id)?.name)
+        .map((id) => interests.find((interest) => interest.id === id)?.name)
         .filter(Boolean) as string[];
 
-      // Replace instead of append
       await supabase.from("user_preferences").delete().eq("user_id", user.id);
 
       const rows = selectedInterestNames.map((name) => ({
@@ -104,11 +113,13 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         if (error) throw error;
       }
 
-      await supabase.from("profiles").update({ onboarded: true }).eq("id", user.id);
+      const { error: profileError } = await supabase.from("profiles").update({ onboarded: true }).eq("id", user.id);
+      if (profileError) throw profileError;
 
       onComplete();
     } catch (error) {
       console.error("Error saving interests:", error);
+      setInterestWarning("Failed to save interests. Apply the latest interests seed SQL, then try again.");
     } finally {
       setSaving(false);
     }
@@ -119,7 +130,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: LIGHT_BG }}>
-        <div className="text-black/70">Loading…</div>
+        <div className="text-black/70">Loading...</div>
       </div>
     );
   }
@@ -127,7 +138,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: LIGHT_BG }}>
       <div className="flex-1 overflow-y-auto pb-28">
-        {/* Header */}
         <div className="px-5 pt-6 pb-5">
           <div className="max-w-5xl mx-auto">
             <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
@@ -142,68 +152,78 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           </div>
         </div>
 
-        {/* Grid */}
         <div className="px-5 pb-8">
           <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {sortedInterests.map((interest) => {
-                const isSelected = selectedInterests.has(interest.id);
+            {interestWarning ? (
+              <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                {interestWarning}
+              </div>
+            ) : null}
 
-                return (
-                  <button
-                    key={interest.id}
-                    onClick={() => toggleInterest(interest.id)}
-                    className={`relative rounded-2xl p-4 border transition text-left bg-white hover:bg-black/5 ${
-                      isSelected ? "shadow-sm" : ""
-                    }`}
-                    style={{
-                      borderColor: isSelected ? "rgba(237,27,47,0.45)" : "rgba(0,0,0,0.10)",
-                      outline: "none",
-                    }}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center border"
-                          style={{
-                            borderColor: isSelected ? "rgba(237,27,47,0.35)" : "rgba(0,0,0,0.10)",
-                            background: isSelected ? "rgba(237,27,47,0.08)" : "rgba(0,0,0,0.02)",
-                          }}
-                        >
-                          <span className="text-xl">{getIcon(interest.icon)}</span>
+            {sortedInterests.length ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {sortedInterests.map((interest) => {
+                  const isSelected = selectedInterests.has(interest.id);
+
+                  return (
+                    <button
+                      key={interest.id}
+                      onClick={() => toggleInterest(interest.id)}
+                      className={`relative rounded-2xl p-4 border transition text-left bg-white hover:bg-black/5 ${
+                        isSelected ? "shadow-sm" : ""
+                      }`}
+                      style={{
+                        borderColor: isSelected ? "rgba(237,27,47,0.45)" : "rgba(0,0,0,0.10)",
+                        outline: "none",
+                      }}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-10 h-10 rounded-xl flex items-center justify-center border"
+                            style={{
+                              borderColor: isSelected ? "rgba(237,27,47,0.35)" : "rgba(0,0,0,0.10)",
+                              background: isSelected ? "rgba(237,27,47,0.08)" : "rgba(0,0,0,0.02)",
+                            }}
+                          >
+                            <span className="text-xl">{getIcon(interest.icon)}</span>
+                          </div>
+
+                          <div className="text-[15px] font-bold text-black">{interest.name}</div>
                         </div>
 
-                        <div className="text-[15px] font-bold text-black">{interest.name}</div>
+                        {isSelected && (
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center border"
+                            style={{ borderColor: "rgba(237,27,47,0.35)", background: "rgba(237,27,47,0.10)" }}
+                          >
+                            <Check className="w-4 h-4" style={{ color: MCGILL_RED }} />
+                          </div>
+                        )}
                       </div>
-
-                      {isSelected && (
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center border"
-                          style={{ borderColor: "rgba(237,27,47,0.35)", background: "rgba(237,27,47,0.10)" }}
-                        >
-                          <Check className="w-4 h-4" style={{ color: MCGILL_RED }} />
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-black/10 bg-white px-5 py-6 text-center text-black/60">
+                No interests are available right now. Apply the latest interests seed SQL and refresh.
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Bottom action bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/10">
         <div className="mx-auto max-w-5xl px-5 py-4">
           <button
             onClick={handleComplete}
-            disabled={selectedCount === 0 || saving}
+            disabled={selectedCount === 0 || saving || !sortedInterests.length}
             className="w-full rounded-xl py-3.5 text-sm font-semibold flex items-center justify-center gap-2 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: MCGILL_RED }}
           >
             {saving ? (
-              "Saving…"
+              "Saving..."
             ) : (
               <>
                 Continue <ChevronRight className="w-5 h-5" />
