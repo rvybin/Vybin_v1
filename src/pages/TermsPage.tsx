@@ -94,7 +94,7 @@ const termsSections = [
     heading: "13. Contact",
     paragraphs: [
       "Vybin",
-      "Email: contact@vybin.org",
+      "Email: vyasrohan07@gmail.com",
       "Location: Montréal, Québec, Canada",
     ],
   },
