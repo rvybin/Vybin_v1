@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { EventModal } from "./EventModal";
 import type { Database } from "../lib/database.types";
+import { buildEventMatchText, matchesInterest, normalizeMatchText } from "../lib/eventMatching";
 
 type SavedEventInsert = Database["public"]["Tables"]["saved_events"]["Insert"];
 type ApplicationInsert = Database["public"]["Tables"]["applications"]["Insert"];
@@ -66,6 +67,8 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "session",
   ],
   "Social & Community Events": ["social", "community", "mixer", "connect", "meetup", "hangout"],
+  "Arts & Creative Activities": ["art", "creative", "crochet", "craft", "design", "music", "painting"],
+  "Academic Support & Research": ["research", "library", "thesis", "citation", "academic", "phd", "study"],
   "International Student Services": ["international", "immigration", "iss", "visa", "global", "orientation"],
   "Leadership & Personal Growth": ["leadership", "mindset", "growth", "development", "imposter"],
 };
@@ -107,9 +110,6 @@ const stripHTML = (html?: string | null) =>
     // cleanup
     .replace(/\s+/g, " ")
     .trim();
-
-const normalize = (s?: string | null) =>
-  (s ?? "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
 
 // ✅ exactly 1 sentence, no ellipsis. If too long, hard-trim without adding "…".
 function oneSentenceNoEllipsis(html: string | null, maxChars = 170) {
@@ -153,7 +153,7 @@ function getIcon(iconName: string): string {
 }
 
 function pickCategory(ev: AppEvent, candidates: string[]) {
-  const text = normalize(`${ev.title} ${stripHTML(ev.description)} ${ev.event_type ?? ""} ${ev.organization ?? ""}`);
+  const text = buildEventMatchText(ev);
 
   let bestName = candidates[0] ?? "Social & Community Events";
   let bestHits = -1;
@@ -161,7 +161,7 @@ function pickCategory(ev: AppEvent, candidates: string[]) {
   for (const name of candidates) {
     const kws = CATEGORY_KEYWORDS[name] ?? [];
     let hits = 0;
-    for (const kw of kws) if (text.includes(normalize(kw))) hits++;
+    for (const kw of kws) if (text.includes(normalizeMatchText(kw))) hits++;
     if (hits > bestHits) {
       bestHits = hits;
       bestName = name;
@@ -274,11 +274,7 @@ export function FeedTab() {
 
       const filtered = interests.length
         ? upcoming.filter((ev) => {
-            const text = normalize(`${ev.title} ${stripHTML(ev.description)} ${ev.event_type ?? ""} ${ev.organization ?? ""}`);
-            return interests.some((i) => {
-              const kws = CATEGORY_KEYWORDS[i] ?? [];
-              return kws.some((k) => text.includes(normalize(k)));
-            });
+            return interests.some((interestName) => matchesInterest(interestName, ev));
           })
         : upcoming;
 
