@@ -21,9 +21,19 @@ interface EventModalProps {
   event: Event | null;
   isOpen: boolean;
   onClose: () => void;
+  isApplied?: boolean;
+  onMarkApplied?: (event: Event) => Promise<void> | void;
+  markingApplied?: boolean;
 }
 
-export function EventModal({ event, isOpen, onClose }: EventModalProps) {
+export function EventModal({
+  event,
+  isOpen,
+  onClose,
+  isApplied = false,
+  onMarkApplied,
+  markingApplied = false,
+}: EventModalProps) {
   const MCGILL_RED = "#ED1B2F";
 
   useEffect(() => {
@@ -200,29 +210,45 @@ export function EventModal({ event, isOpen, onClose }: EventModalProps) {
         </div>
 
         {/* Footer CTA */}
-        {event.link ? (
-          <div className="p-5 border-t border-black/10 bg-white">
-            <a
-              href={event.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-white transition hover:opacity-90"
-              style={{ background: MCGILL_RED }}
-            >
-              <ExternalLink className="h-5 w-5" />
-              Open in Browser
-            </a>
+        <div className="p-5 border-t border-black/10 bg-white">
+          <div className="flex flex-col gap-3">
+            {event.link ? (
+              <a
+                href={event.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-white transition hover:opacity-90"
+                style={{ background: MCGILL_RED }}
+              >
+                <ExternalLink className="h-5 w-5" />
+                Open Event Link
+              </a>
+            ) : (
+              <div className="rounded-2xl border border-black/10 bg-black/[0.03] px-4 py-3 text-sm text-black/60">
+                No external event link was provided for this event.
+              </div>
+            )}
+
+            {onMarkApplied ? (
+              <button
+                onClick={() => onMarkApplied(event)}
+                disabled={isApplied || markingApplied}
+                className="w-full rounded-2xl py-3 font-semibold border border-black/15 bg-white transition hover:bg-black/5 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isApplied ? "Applied" : markingApplied ? "Marking..." : "Mark as Applied"}
+              </button>
+            ) : null}
+
+            {!event.link && !onMarkApplied ? (
+              <button
+                onClick={onClose}
+                className="w-full rounded-2xl py-3 font-semibold border border-black/15 bg-white hover:bg-black/5 transition"
+              >
+                Close
+              </button>
+            ) : null}
           </div>
-        ) : (
-          <div className="p-5 border-t border-black/10 bg-white">
-            <button
-              onClick={onClose}
-              className="w-full rounded-2xl py-3 font-semibold border border-black/15 bg-white hover:bg-black/5 transition"
-            >
-              Close
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

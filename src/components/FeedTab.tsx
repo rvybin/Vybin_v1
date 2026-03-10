@@ -181,6 +181,7 @@ export function FeedTab() {
 
   const [selectedEvent, setSelectedEvent] = useState<AppEvent | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [markingApplied, setMarkingApplied] = useState(false);
 
   const [fadeState, setFadeState] = useState<"fade-in" | "fade-out">("fade-in");
 
@@ -304,13 +305,7 @@ export function FeedTab() {
     }
   };
 
-  const handleApply = async (id: string, ev: AppEvent) => {
-    if (!user || appliedEvents.has(id)) return;
-
-    const row: ApplicationInsert = { user_id: user.id, event_id: id };
-    await supabase.from("applications").insert(row);
-    setAppliedEvents((p) => new Set(p).add(id));
-
+  const handleAddToCalendar = async (ev: AppEvent) => {
     const start = new Date(ev.date);
     const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
     const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
@@ -320,6 +315,27 @@ export function FeedTab() {
     )}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(stripHTML(ev.description))}`;
 
     window.open(url, "_blank");
+  };
+
+  const handleMarkApplied = async (ev: { id: string }) => {
+    if (!user || appliedEvents.has(ev.id)) return;
+
+    try {
+      setMarkingApplied(true);
+      const row: ApplicationInsert = { user_id: user.id, event_id: ev.id };
+      const { error } = await supabase.from("applications").insert(row);
+      if (error) throw error;
+      setAppliedEvents((p) => new Set(p).add(ev.id));
+    } catch (error: any) {
+      // Ignore duplicates if the row already exists in the DB.
+      if (error?.code !== "23505") {
+        console.error("Failed to mark application:", error);
+      } else {
+        setAppliedEvents((p) => new Set(p).add(ev.id));
+      }
+    } finally {
+      setMarkingApplied(false);
+    }
   };
 
   const openModal = (ev: AppEvent) => {
@@ -492,16 +508,15 @@ export function FeedTab() {
                 className="rounded-xl px-4 py-2 text-sm font-semibold border border-black/15 bg-white transition hover:bg-[#ED1B2F] hover:border-[#ED1B2F] hover:text-white flex items-center gap-2"
               >
                 <Eye className="w-4 h-4" />
-                Details
+                View Details & Apply
               </button>
 
               <button
-                onClick={() => handleApply(ev.id, ev)}
-                disabled={isApplied}
-                className="rounded-xl px-4 py-2 text-sm font-semibold border border-black/15 bg-white transition hover:bg-[#ED1B2F] hover:border-[#ED1B2F] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+                onClick={() => handleAddToCalendar(ev)}
+                className="rounded-xl px-4 py-2 text-sm font-semibold border border-black/15 bg-white transition hover:bg-[#ED1B2F] hover:border-[#ED1B2F] hover:text-white flex items-center gap-2"
               >
-                {isApplied ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-                {isApplied ? "Applied" : "Apply"}
+                <Send className="w-4 h-4" />
+                Add to Calendar
               </button>
             </div>
           </div>
@@ -588,7 +603,14 @@ export function FeedTab() {
         )}
       </div>
 
-      <EventModal event={selectedEvent as any} isOpen={isModalOpen} onClose={closeModal} />
+      <EventModal
+        event={selectedEvent as any}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        isApplied={selectedEvent ? appliedEvents.has(selectedEvent.id) : false}
+        onMarkApplied={selectedEvent ? handleMarkApplied : undefined}
+        markingApplied={markingApplied}
+      />
     </>
   );
 }
