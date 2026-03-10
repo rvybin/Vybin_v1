@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { MapPin, Bookmark, Send, Eye, CheckCircle2 } from "lucide-react";
+import { MapPin, Bookmark, CalendarPlus, Eye, CheckCircle2 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { EventModal } from "./EventModal";
@@ -21,6 +21,7 @@ interface AppEvent {
   image_url: string | null;
   prize: string | null;
   tags: string[] | null;
+  time?: string | null;
   link?: string | null;
 }
 
@@ -183,7 +184,7 @@ export function FeedTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [markingApplied, setMarkingApplied] = useState(false);
 
-  const [fadeState, setFadeState] = useState<"fade-in" | "fade-out">("fade-in");
+  const [fadeState] = useState<"fade-in" | "fade-out">("fade-in");
 
   const [windowDays, setWindowDays] = useState<7 | 14 | 30>(14);
 
@@ -191,6 +192,7 @@ export function FeedTab() {
   const [interestIconMap, setInterestIconMap] = useState<Record<string, string>>({});
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const FEED_MODAL_STORAGE_KEY = "vybin_feed_selected_event";
 
   const MCGILL_RED = "#ED1B2F";
   const LIGHT_BG = "#F6F7F9";
@@ -209,6 +211,21 @@ export function FeedTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [windowDays]);
 
+  useEffect(() => {
+    const saved = sessionStorage.getItem(FEED_MODAL_STORAGE_KEY);
+    if (!saved) return;
+
+    try {
+      const parsed = JSON.parse(saved) as AppEvent;
+      if (parsed?.id) {
+        setSelectedEvent(parsed);
+        setIsModalOpen(true);
+      }
+    } catch {
+      sessionStorage.removeItem(FEED_MODAL_STORAGE_KEY);
+    }
+  }, []);
+
   const loadInterestIcons = async () => {
     try {
       const { data } = await supabase.from("interests").select("name, icon");
@@ -222,14 +239,6 @@ export function FeedTab() {
       console.error("Error loading interests icons:", e);
       setInterestIconMap({});
     }
-  };
-
-  const handleRefresh = () => {
-    setFadeState("fade-out");
-    setTimeout(() => {
-      loadEventsWithPreferences();
-      setFadeState("fade-in");
-    }, 220);
   };
 
   const loadUserData = async () => {
@@ -305,14 +314,61 @@ export function FeedTab() {
     }
   };
 
-  const handleAddToCalendar = async (ev: AppEvent) => {
+  const parseCalendarRange = (ev: AppEvent) => {
     const start = new Date(ev.date);
-    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    let end = new Date(start.getTime() + 60 * 60 * 1000);
+
+    const timeText = ev.time ?? "";
+    const rangeMatch = timeText.match(
+      /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|—|to)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i
+    );
+
+    if (rangeMatch) {
+      const [, startHourRaw, startMinuteRaw, startMeridiemRaw, endHourRaw, endMinuteRaw, endMeridiemRaw] = rangeMatch;
+      const resolvedStartMeridiem = (startMeridiemRaw ?? endMeridiemRaw ?? "").toLowerCase();
+      const resolvedEndMeridiem = (endMeridiemRaw ?? startMeridiemRaw ?? "").toLowerCase();
+
+      const to24Hour = (hourRaw: string, meridiem: string) => {
+        let hour = Number(hourRaw);
+        if (meridiem === "pm" && hour !== 12) hour += 12;
+        if (meridiem === "am" && hour === 12) hour = 0;
+        return hour;
+      };
+
+      start.setHours(to24Hour(startHourRaw, resolvedStartMeridiem), Number(startMinuteRaw ?? 0), 0, 0);
+
+      end = new Date(start);
+      end.setHours(to24Hour(endHourRaw, resolvedEndMeridiem), Number(endMinuteRaw ?? 0), 0, 0);
+
+      if (end <= start) {
+        end = new Date(start.getTime() + 60 * 60 * 1000);
+      }
+    }
+
+    return { start, end };
+  };
+
+  const getCalendarLocation = (ev: AppEvent) => {
+    const explicitLocation = ev.location?.trim();
+    if (explicitLocation) return explicitLocation;
+
+    const searchableText = `${ev.title} ${ev.description ?? ""} ${ev.event_type ?? ""}`.toLowerCase();
+    if (/(online|virtual|zoom|teams|google meet)/i.test(searchableText)) {
+      return "Online";
+    }
+
+    return "McGill University";
+  };
+
+  const handleAddToCalendar = async (ev: AppEvent) => {
+    const { start, end } = parseCalendarRange(ev);
     const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
       ev.title
-    )}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(stripHTML(ev.description))}`;
+    )}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(stripHTML(ev.description))}&location=${encodeURIComponent(
+      getCalendarLocation(ev)
+    )}`;
 
     window.open(url, "_blank");
   };
@@ -341,9 +397,11 @@ export function FeedTab() {
   const openModal = (ev: AppEvent) => {
     setSelectedEvent(ev);
     setIsModalOpen(true);
+    sessionStorage.setItem(FEED_MODAL_STORAGE_KEY, JSON.stringify(ev));
   };
   const closeModal = () => {
     setIsModalOpen(false);
+    sessionStorage.removeItem(FEED_MODAL_STORAGE_KEY);
     setTimeout(() => setSelectedEvent(null), 220);
   };
 
@@ -515,7 +573,7 @@ export function FeedTab() {
                 onClick={() => handleAddToCalendar(ev)}
                 className="rounded-xl px-4 py-2 text-sm font-semibold border border-black/15 bg-white transition hover:bg-[#ED1B2F] hover:border-[#ED1B2F] hover:text-white flex items-center gap-2"
               >
-                <Send className="w-4 h-4" />
+                <CalendarPlus className="w-4 h-4" />
                 Add to Calendar
               </button>
             </div>
@@ -556,8 +614,8 @@ export function FeedTab() {
                 <WindowPill days={7} />
                 <WindowPill days={14} />
                 <WindowPill days={30} />
-                <button
-                  onClick={handleRefresh}
+                <button hidden
+                  onClick={() => {}}
                   className="ml-1 px-3 py-1.5 rounded-full text-xs font-semibold border border-black/10 bg-white hover:bg-black/5 transition flex items-center gap-2"
                   title="Refresh"
                 >
