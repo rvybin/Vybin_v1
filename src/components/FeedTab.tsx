@@ -547,7 +547,7 @@ export function FeedTab() {
             <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-black/60">
               <div className="flex flex-wrap items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                <span className="font-bold text-black/75">{ev.location ?? "McGill University"}</span>
+                <span className="break-words font-bold text-black/75">{ev.location ?? "McGill University"}</span>
               </div>
 
               {isApplied && (
@@ -598,7 +598,7 @@ export function FeedTab() {
           <div className="max-w-5xl mx-auto">
             <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
+                <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
                   McGill Events
                 </h1>

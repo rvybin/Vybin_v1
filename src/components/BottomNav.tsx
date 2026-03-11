@@ -25,10 +25,10 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/10 bg-white/95 backdrop-blur md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-[60] border-t border-black/10 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 8px)" }}
     >
-      <div className="mx-auto flex h-[68px] max-w-5xl items-center justify-around px-2 sm:px-4">
+      <div className="mx-auto flex h-[72px] max-w-5xl items-center justify-around px-2 sm:px-4">
         <button onClick={() => onTabChange("feed")} className={tabClass("feed")}>
           <Home className="h-5 w-5 sm:h-6 sm:w-6" style={iconStyle("feed")} />
           <span className="truncate text-[10px] font-semibold sm:text-[11px]" style={textStyle("feed")}>

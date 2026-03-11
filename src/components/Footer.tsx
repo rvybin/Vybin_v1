@@ -10,26 +10,23 @@ export function Footer() {
         <div className="mb-6 flex flex-col items-center justify-center gap-3 text-sm sm:flex-row sm:gap-4">
           <div className="flex flex-wrap items-center justify-center gap-2 text-center">
             <Mail className="h-4 w-4 text-[#4C6EF5]" />
-            <span className="text-gray-300">contact@vybin.org</span>
+            <span className="text-gray-300">vyasrohan07@gmail.com</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2 text-center">
             <Instagram className="h-4 w-4 text-[#A78BFA]" />
             <a
-              href="https://www.instagram.com/wearevybin/"
+              href="https://www.instagram.com/vybin_org/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-300 transition-colors hover:text-white"
             >
-              @wearevybin
+              @vybin_org
             </a>
           </div>
         </div>
 
-        <p className="text-xs leading-relaxed text-gray-500">
-          © {new Date().getFullYear()} <span className="font-semibold text-white">Vybin</span>. Connecting McGill
-          students through shared experiences.
-        </p>
+        <p className="text-xs leading-relaxed text-gray-500">&copy; 2026 Vybin. All rights reserved.</p>
 
         <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs">
           <Link to="/terms" className="transition-colors hover:text-[#4C6EF5]">

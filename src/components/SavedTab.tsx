@@ -302,7 +302,7 @@ export function SavedTab() {
             <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-black/60">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                <span className="font-bold text-black/75">{decodeText(ev.location ?? "McGill University")}</span>
+                <span className="break-words font-bold text-black/75">{decodeText(ev.location ?? "McGill University")}</span>
               </div>
             </div>
 

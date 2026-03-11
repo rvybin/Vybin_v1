@@ -198,11 +198,11 @@ export function CalendarTab() {
   };
 
   return (
-    <div className="flex-1 pb-24" style={{ background: LIGHT_BG }}>
+    <div className="flex-1 overflow-x-hidden pb-24" style={{ background: LIGHT_BG }}>
       {/* Header */}
-      <div className="px-5 pt-6 pb-5">
+      <div className="px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-6">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5 flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:flex-row sm:items-start sm:justify-between sm:p-5">
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
                 Calendar
@@ -222,9 +222,9 @@ export function CalendarTab() {
       </div>
 
       {/* Body */}
-      <div className="px-5 pb-8">
+      <div className="px-4 pb-8 sm:px-5">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-6">
+          <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-6">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-black/10 bg-black/5">
                 <Upload className="w-5 h-5" style={{ color: MCGILL_RED }} />

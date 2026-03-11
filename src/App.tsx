@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LandingPage } from "./components/LandingPage";
@@ -59,6 +60,14 @@ function AppContent() {
     if (!user) return;
     await supabase.from("profiles").update({ onboarded: false }).eq("id", user.id);
     setIsOnboarded(false);
+  };
+
+  const tabLabelMap: Record<Tab, string> = {
+    feed: "Feed",
+    applications: "Applications",
+    calendar: "Calendar",
+    saved: "Saved",
+    profile: "Profile",
   };
 
   const showNav = !authLoading && !checkingOnboarding && !!user && isOnboarded;
@@ -134,11 +143,33 @@ function AppContent() {
     );
   };
 
+  const MobileHeader = () => (
+    <div className="fixed left-0 right-0 top-0 z-[60] border-b border-black/10 bg-white/95 backdrop-blur md:hidden">
+      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+        <button onClick={() => setActiveTab("feed")} className="flex items-center gap-2 select-none">
+          <span className="text-xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
+            vyb<span className="opacity-90">in</span>
+          </span>
+        </button>
+
+        <div className="text-sm font-semibold text-black/75">{tabLabelMap[activeTab]}</div>
+
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-black/70 transition hover:bg-black/5"
+        >
+          Sign out
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#F6F7F9] text-black">
       {showNav && <TopNav />}
+      {showNav && <MobileHeader />}
 
-      <div className="min-h-screen overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] pt-0 md:pb-0 md:pt-24">
+      <div className="min-h-screen overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-16 md:pb-0 md:pt-24">
         {activeTab === "feed" && <FeedTab />}
         {activeTab === "applications" && <ApplicationsTab />}
         {activeTab === "calendar" && <CalendarTab />}
