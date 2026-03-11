@@ -197,10 +197,10 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
   const displayName = profile?.display_name || user?.email?.split("@")[0] || "User";
 
   return (
-    <div className="flex-1 overflow-y-auto pb-24" style={{ background: LIGHT_BG }}>
-      <div className="px-5 pt-6 pb-5">
+    <div className="flex-1 overflow-x-hidden overflow-y-auto pb-24" style={{ background: LIGHT_BG }}>
+      <div className="px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-6">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+          <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
               Profile
             </h1>
@@ -208,9 +208,9 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
             <div className="mt-4 h-[2px] w-24 rounded-full" style={{ background: MCGILL_RED }} />
           </div>
 
-          <div className="mt-4 bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+          <div className="mt-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+              <div className="flex min-w-0 items-center gap-4">
                 <div className="relative" ref={cameraRef}>
                   <img
                     src={avatarSrc}
@@ -273,9 +273,9 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
                   />
                 </div>
 
-                <div>
-                  <h2 className="text-xl font-extrabold text-black leading-tight">{displayName}</h2>
-                  <p className="text-sm text-black/60">Signed in as {user?.email ?? "-"}</p>
+                <div className="min-w-0">
+                  <h2 className="break-words text-xl font-extrabold leading-tight text-black">{displayName}</h2>
+                  <p className="break-all text-sm text-black/60">Signed in as {user?.email ?? "-"}</p>
                 </div>
               </div>
 
@@ -299,7 +299,7 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
         </div>
       </div>
 
-      <div className="px-5 pb-10">
+      <div className="px-4 pb-10 sm:px-5">
         <div className="max-w-5xl mx-auto">
           <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
             <div className="p-5 flex items-center justify-between">
@@ -316,24 +316,21 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
               ) : (
                 <div className="divide-y divide-black/5">
                   {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-5 transition ${notification.read ? "" : "bg-red-50"}`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
+                    <div key={notification.id} className={`p-4 transition sm:p-5 ${notification.read ? "" : "bg-red-50"}`}>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <button
-                          className="flex-1 text-left"
+                          className="min-w-0 flex-1 text-left"
                           onClick={() => notification.url && window.open(notification.url, "_blank", "noopener,noreferrer")}
                           disabled={!notification.url}
                         >
-                          <p className="font-bold text-black">{notification.title}</p>
-                          {notification.body ? <p className="text-sm text-black/60 mt-1">{notification.body}</p> : null}
+                          <p className="break-words font-bold text-black">{notification.title}</p>
+                          {notification.body ? <p className="mt-1 break-words text-sm text-black/60">{notification.body}</p> : null}
                           <p className="text-xs text-black/45 mt-2">
                             {notification.created_at ? new Date(notification.created_at).toLocaleString() : ""}
                           </p>
                         </button>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-end gap-2 sm:justify-start">
                           {!notification.read ? (
                             <span
                               className="text-[11px] font-bold px-2 py-1 rounded-full border"

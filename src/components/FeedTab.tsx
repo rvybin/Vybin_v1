@@ -493,7 +493,7 @@ export function FeedTab() {
     const { emoji, accent } = metaForCategory(category);
 
     return (
-      <div className="group relative rounded-2xl border border-black/10 bg-white shadow-sm transition hover:shadow-md overflow-hidden">
+      <div className="group relative overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm transition hover:shadow-md">
         <button
           onClick={() => handleSave(ev.id)}
           className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white border border-black/10 hover:bg-black/5 transition"
@@ -508,9 +508,9 @@ export function FeedTab() {
           />
         </button>
 
-        <div className="flex">
+        <div className="flex flex-col sm:flex-row">
           <div
-            className="w-52 min-w-[208px] flex items-center justify-center"
+            className="flex h-36 w-full items-center justify-center sm:h-auto sm:w-52 sm:min-w-[208px]"
             style={{
               background: `linear-gradient(135deg, ${accent} 0%, rgba(237,27,47,0.22) 100%)`,
             }}
@@ -518,11 +518,11 @@ export function FeedTab() {
             <div className="select-none text-6xl drop-shadow-sm">{emoji}</div>
           </div>
 
-          <div className="flex-1 p-5">
-            <div className="pr-12">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-[17px] font-extrabold text-black leading-snug">{ev.title}</h3>
+          <div className="flex-1 p-4 sm:p-5">
+            <div className="pr-0 sm:pr-12">
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between">
+                <div className="min-w-0">
+                  <h3 className="break-words text-[17px] font-extrabold leading-snug text-black">{ev.title}</h3>
                   {ev.organization && <p className="text-sm text-black/60 mt-1">{ev.organization}</p>}
                 </div>
 
@@ -545,7 +545,7 @@ export function FeedTab() {
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-black/60">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 <span className="font-bold text-black/75">{ev.location ?? "McGill University"}</span>
               </div>
@@ -560,10 +560,10 @@ export function FeedTab() {
               )}
             </div>
 
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 onClick={() => openModal(ev)}
-                className="rounded-xl px-4 py-2 text-sm font-semibold border border-black/15 bg-white transition hover:bg-[#ED1B2F] hover:border-[#ED1B2F] hover:text-white flex items-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-black/15 bg-white px-4 py-2 text-sm font-semibold transition hover:border-[#ED1B2F] hover:bg-[#ED1B2F] hover:text-white sm:w-auto"
               >
                 <Eye className="w-4 h-4" />
                 View Details & Apply
@@ -571,7 +571,7 @@ export function FeedTab() {
 
               <button
                 onClick={() => handleAddToCalendar(ev)}
-                className="rounded-xl px-4 py-2 text-sm font-semibold border border-black/15 bg-white transition hover:bg-[#ED1B2F] hover:border-[#ED1B2F] hover:text-white flex items-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-black/15 bg-white px-4 py-2 text-sm font-semibold transition hover:border-[#ED1B2F] hover:bg-[#ED1B2F] hover:text-white sm:w-auto"
               >
                 <CalendarPlus className="w-4 h-4" />
                 Add to Calendar
@@ -593,15 +593,16 @@ export function FeedTab() {
 
   return (
     <>
-      <div ref={scrollRef} className="flex-1 pb-24" style={{ background: LIGHT_BG }}>
-        <div className="px-5 pt-6 pb-5">
+      <div ref={scrollRef} className="flex-1 overflow-x-hidden pb-24" style={{ background: LIGHT_BG }}>
+        <div className="px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-6">
           <div className="max-w-5xl mx-auto">
-            <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5 flex items-start justify-between gap-4">
+            <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
                   McGill Events
                 </h1>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="mt-1 flex flex-wrap items-center gap-2">
                   <p className="text-sm sm:text-base text-black/60">Events matched to your interests</p>
                   <span className="text-[11px] font-semibold px-2 py-1 rounded-full bg-red-50 text-red-600 border border-red-200">
                     Next {windowDays} days
@@ -610,7 +611,7 @@ export function FeedTab() {
                 <div className="mt-4 h-[2px] w-24 rounded-full" style={{ background: MCGILL_RED }} />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <WindowPill days={7} />
                 <WindowPill days={14} />
                 <WindowPill days={30} />
@@ -633,7 +634,7 @@ export function FeedTab() {
           <div className="flex items-center justify-center h-48 text-black/60">No matching events found.</div>
         ) : (
           <div
-            className={`px-5 pb-8 max-w-5xl mx-auto transition-opacity duration-300 ${
+            className={`mx-auto max-w-5xl px-4 pb-8 transition-opacity duration-300 sm:px-5 ${
               fadeState === "fade-in" ? "opacity-100" : "opacity-0"
             }`}
           >

@@ -45,7 +45,7 @@ export function SplashScreen({ onGetStarted }: LandingProps) {
 
       {/* Sticky glass navbar */}
       <header className="sticky top-0 z-50">
-        <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
             <div className="flex items-center justify-between px-5 py-3">
               {/* Logo */}
@@ -85,7 +85,7 @@ export function SplashScreen({ onGetStarted }: LandingProps) {
       </header>
 
       {/* Main hero */}
-      <main className="mx-auto max-w-6xl px-6">
+      <main className="mx-auto max-w-6xl px-4 sm:px-6">
         <section className="min-h-[calc(100vh-120px)] flex items-center justify-center">
           <div className="w-full">
             <div className="text-center animate-in fade-in slide-in-from-bottom duration-700">
@@ -94,7 +94,7 @@ export function SplashScreen({ onGetStarted }: LandingProps) {
                 Discover what’s happening on campus — fast.
               </div>
 
-              <h1 className="mx-auto max-w-4xl text-5xl sm:text-6xl md:text-7xl font-extrabold leading-[1.02] tracking-tight">
+              <h1 className="mx-auto max-w-4xl text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl md:text-7xl">
                 Find events you’ll actually{" "}
                 <span className="bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] bg-clip-text text-transparent">
                   care about.
@@ -123,7 +123,7 @@ export function SplashScreen({ onGetStarted }: LandingProps) {
 
                 <button
                   onClick={scrollToFeatures}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-7 py-4 text-base font-semibold text-white/80 backdrop-blur transition hover:bg-white/10 hover:text-white"
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-7 py-4 text-base font-semibold text-white/80 backdrop-blur transition hover:bg-white/10 hover:text-white sm:w-auto"
                 >
                   See features
                 </button>

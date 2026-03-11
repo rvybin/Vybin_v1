@@ -47,13 +47,13 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
       {/* Sticky Glass Navbar */}
       <div className="fixed top-0 left-0 right-0 z-50">
-        <div className="mx-auto max-w-6xl px-4 pt-4">
+        <div className="mx-auto max-w-6xl px-3 pt-3 sm:px-4 sm:pt-4">
           <div className="relative">
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#00BFFF]/30 to-[#4C6EF5]/30 blur-2xl opacity-30" />
-            <div className="relative flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
+            <div className="relative flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-3 py-3 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.35)] sm:px-4">
               {/* Left: Logo */}
               <button onClick={() => scrollToId("top")} className="flex items-center gap-2 select-none -translate-y-[3.5px]">
-                <span className="text-2xl font-extrabold tracking-tight">
+                <span className="text-xl font-extrabold tracking-tight sm:text-2xl">
                   <span className="text-white">vyb</span>
                   <span className="bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] bg-clip-text text-transparent">
                     in
@@ -82,9 +82,10 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               {/* Right: Get Started */}
               <button
                 onClick={onGetStarted}
-                className="group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] shadow-[0_0_18px_rgba(0,191,255,0.45)] hover:shadow-[0_0_30px_rgba(0,191,255,0.75)] transition-all duration-300 hover:-translate-y-[1px]"
+                className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] px-3 py-2 text-xs font-semibold shadow-[0_0_18px_rgba(0,191,255,0.45)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_0_30px_rgba(0,191,255,0.75)] sm:px-4 sm:text-sm"
               >
-                Get Started
+                <span className="hidden sm:inline">Get Started</span>
+                <span className="sm:hidden">Start</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
             </div>
@@ -95,7 +96,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       {/* Page content */}
       <div id="top" className="relative z-10">
         {/* HERO */}
-        <section className="min-h-screen flex items-center justify-center px-6 pt-28 md:pt-32">
+        <section className="flex min-h-screen items-center justify-center px-4 pt-24 sm:px-6 md:pt-32">
           <div className="w-full max-w-6xl">
             <div className="mx-auto max-w-4xl text-center">
               <div
@@ -112,7 +113,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
               <h1
                 className={[
-                  "text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.05]",
+                  "text-4xl font-extrabold tracking-tight leading-[1.05] sm:text-5xl md:text-7xl",
                   "transition-all duration-700 delay-100",
                   mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3",
                 ].join(" ")}
@@ -126,7 +127,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
               <p
                 className={[
-                  "mt-6 text-base md:text-lg text-white/65 max-w-2xl mx-auto",
+                  "mx-auto mt-6 max-w-2xl text-sm text-white/65 sm:text-base md:text-lg",
                   "transition-all duration-700 delay-200",
                   mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3",
                 ].join(" ")}
@@ -180,7 +181,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         </section>
 
         {/* FEATURES */}
-        <section id="features" className="scroll-mt-28 px-6 pb-20">
+        <section id="features" className="scroll-mt-24 px-4 pb-16 sm:px-6 sm:pb-20">
           <div className="mx-auto max-w-7xl">
             <div className="text-center mb-10">
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
@@ -190,7 +191,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 </span>
                 .
               </h2>
-              <p className="mt-3 text-white/60 max-w-4xl mx-auto md:whitespace-nowrap">
+              <p className="mx-auto mt-3 max-w-4xl text-sm text-white/60 sm:text-base md:whitespace-nowrap">
                 A clean experience that helps you discover events, stay organized, and actually show up.
               </p>
             </div>
@@ -207,7 +208,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   <div className="relative h-full rounded-2xl border border-[#00BFFF]/22 bg-[#071A2A]/55 backdrop-blur-md p-6 shadow-[0_0_35px_rgba(0,191,255,0.10)] hover:shadow-[0_0_45px_rgba(0,191,255,0.18)] transition duration-300 group-hover:bg-[#071A2A]/70 group-hover:-translate-y-1">
                     <div className="flex flex-col items-center justify-center text-center gap-2">
                       {/* CHANGED: titles -> light neon pink */}
-                      <h3 className="text-lg font-semibold text-[#FF7AD9] drop-shadow-[0_0_16px_rgba(255,122,217,0.8)] whitespace-nowrap">
+                      <h3 className="text-lg font-semibold text-[#FF7AD9] drop-shadow-[0_0_16px_rgba(255,122,217,0.8)]">
                         {f.title}
                       </h3>
 
@@ -221,9 +222,9 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         </section>
 
         {/* HOW IT WORKS */}
-        <section id="how" className="scroll-mt-28 px-6 pb-20">
+        <section id="how" className="scroll-mt-24 px-4 pb-16 sm:px-6 sm:pb-20">
           <div className="mx-auto max-w-6xl">
-            <div className="relative rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md p-8 overflow-hidden">
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-md sm:p-8">
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute -top-28 right-10 w-[420px] h-[420px] bg-[#00BFFF]/10 rounded-full blur-[120px]" />
                 <div className="absolute -bottom-40 left-10 w-[520px] h-[520px] bg-[#4C6EF5]/10 rounded-full blur-[140px]" />
@@ -262,9 +263,9 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         </section>
 
         {/* LAUNCH */}
-        <section id="launch" className="scroll-mt-28 px-6 pb-24">
+        <section id="launch" className="scroll-mt-24 px-4 pb-20 sm:px-6 sm:pb-24">
           <div className="mx-auto max-w-6xl">
-            <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md p-8">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-md sm:p-8">
               <h3 className="text-2xl font-semibold mb-2">Launch</h3>
               <p className="text-white/60">
                 We’re starting with{" "}
@@ -278,7 +279,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         </section>
 
         {/* FINAL CTA / FOOTER-LIKE SECTION */}
-        <section className="px-6 pb-16">
+        <section className="px-4 pb-16 sm:px-6">
           <div className="mx-auto max-w-6xl">
             <div className="text-center py-16 border-t border-white/10">
               <p className="text-lg md:text-xl font-semibold text-white/85 mb-4">

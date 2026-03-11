@@ -63,7 +63,7 @@ export function LoginScreen() {
 
   if (showSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0B0C10] via-[#1a1d29] to-[#0B0C10] flex items-center justify-center p-4">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0B0C10] via-[#1a1d29] to-[#0B0C10] px-4 py-8 sm:p-4">
         <div className="w-full max-w-md text-center animate-in fade-in zoom-in duration-500">
           <div className="mb-6">
             <div className="w-20 h-20 bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] rounded-full mx-auto flex items-center justify-center animate-pulse">
@@ -80,20 +80,20 @@ export function LoginScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0B0C10] via-[#1a1d29] to-[#0B0C10] flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="flex min-h-screen items-center justify-center overflow-x-hidden bg-gradient-to-br from-[#0B0C10] via-[#1a1d29] to-[#0B0C10] px-4 py-8 sm:p-4">
+      <div className="w-full max-w-md space-y-6 sm:space-y-8">
         <div className="text-center">
-          <div className="text-5xl font-bold mb-3">
+          <div className="mb-3 text-4xl font-bold sm:text-5xl">
             <span className="text-white">vyb</span>
             <span className="text-[#00BFFF]">in</span>
           </div>
-          <p className="text-gray-400 text-lg">Discover. Connect. Vybe.</p>
+          <p className="text-base text-gray-400 sm:text-lg">Discover. Connect. Vybe.</p>
         </div>
 
         {/* 🔹 Card with blue underglow on hover */}
         <div className="group relative">
           <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] opacity-0 blur-2xl transition duration-500 group-hover:opacity-30 group-hover:blur-3xl" />
-          <div className="relative bg-[#1a1d29] rounded-3xl p-8 shadow-2xl border border-gray-800 overflow-hidden transition-all duration-500 group-hover:shadow-[0_0_25px_rgba(0,191,255,0.3)] group-hover:-translate-y-1">
+          <div className="relative overflow-hidden rounded-3xl border border-gray-800 bg-[#1a1d29] p-5 shadow-2xl transition-all duration-500 group-hover:-translate-y-1 group-hover:shadow-[0_0_25px_rgba(0,191,255,0.3)] sm:p-8">
 
             <div className={`transition-all duration-200 ease-out ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
               {error && (

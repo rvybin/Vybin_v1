@@ -136,11 +136,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: LIGHT_BG }}>
-      <div className="flex-1 overflow-y-auto pb-28">
-        <div className="px-5 pt-6 pb-5">
+    <div className="flex min-h-screen flex-col overflow-x-hidden" style={{ background: LIGHT_BG }}>
+      <div className="flex-1 overflow-y-auto pb-32 sm:pb-28">
+        <div className="px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-6">
           <div className="max-w-5xl mx-auto">
-            <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+            <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
                 What are you interested in?
               </h1>
@@ -152,7 +152,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           </div>
         </div>
 
-        <div className="px-5 pb-8">
+        <div className="px-4 pb-6 sm:px-5 sm:pb-8">
           <div className="max-w-5xl mx-auto">
             {interestWarning ? (
               <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -177,8 +177,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                         outline: "none",
                       }}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
                           <div
                             className="w-10 h-10 rounded-xl flex items-center justify-center border"
                             style={{
@@ -189,7 +189,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                             <span className="text-xl">{getIcon(interest.icon)}</span>
                           </div>
 
-                          <div className="text-[15px] font-bold text-black">{interest.name}</div>
+                          <div className="min-w-0 break-words text-[15px] font-bold text-black">{interest.name}</div>
                         </div>
 
                         {isSelected && (
@@ -214,8 +214,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/10">
-        <div className="mx-auto max-w-5xl px-5 py-4">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/10 bg-white">
+        <div className="mx-auto max-w-5xl px-4 py-3 sm:px-5 sm:py-4" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}>
           <button
             onClick={handleComplete}
             disabled={selectedCount === 0 || saving || !sortedInterests.length}

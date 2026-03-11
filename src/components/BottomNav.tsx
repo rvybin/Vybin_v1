@@ -11,7 +11,7 @@ const MCGILL_RED = "#ED1B2F";
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   const tabClass = (tab: Tab) =>
-    `flex flex-col items-center justify-center gap-1 transition-all duration-150 ${
+    `min-w-0 flex flex-col items-center justify-center gap-1 px-1 transition-all duration-150 ${
       activeTab === tab ? "scale-[1.06]" : ""
     }`;
 
@@ -25,41 +25,41 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-black/10 md:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/10 bg-white/95 backdrop-blur md:hidden"
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 8px)" }}
     >
-      <div className="mx-auto max-w-5xl flex items-center justify-around h-16 px-6">
+      <div className="mx-auto flex h-[68px] max-w-5xl items-center justify-around px-2 sm:px-4">
         <button onClick={() => onTabChange("feed")} className={tabClass("feed")}>
-          <Home className="w-6 h-6" style={iconStyle("feed")} />
-          <span className="text-[11px] font-semibold" style={textStyle("feed")}>
+          <Home className="h-5 w-5 sm:h-6 sm:w-6" style={iconStyle("feed")} />
+          <span className="truncate text-[10px] font-semibold sm:text-[11px]" style={textStyle("feed")}>
             Feed
           </span>
         </button>
 
         <button onClick={() => onTabChange("applications")} className={tabClass("applications")}>
-          <FileText className="w-6 h-6" style={iconStyle("applications")} />
-          <span className="text-[11px] font-semibold" style={textStyle("applications")}>
+          <FileText className="h-5 w-5 sm:h-6 sm:w-6" style={iconStyle("applications")} />
+          <span className="truncate text-[10px] font-semibold sm:text-[11px]" style={textStyle("applications")}>
             Apps
           </span>
         </button>
 
         <button onClick={() => onTabChange("calendar")} className={tabClass("calendar")}>
-          <CalendarDays className="w-6 h-6" style={iconStyle("calendar")} />
-          <span className="text-[11px] font-semibold" style={textStyle("calendar")}>
+          <CalendarDays className="h-5 w-5 sm:h-6 sm:w-6" style={iconStyle("calendar")} />
+          <span className="truncate text-[10px] font-semibold sm:text-[11px]" style={textStyle("calendar")}>
             Calendar
           </span>
         </button>
 
         <button onClick={() => onTabChange("saved")} className={tabClass("saved")}>
-          <Bookmark className="w-6 h-6" style={iconStyle("saved")} />
-          <span className="text-[11px] font-semibold" style={textStyle("saved")}>
+          <Bookmark className="h-5 w-5 sm:h-6 sm:w-6" style={iconStyle("saved")} />
+          <span className="truncate text-[10px] font-semibold sm:text-[11px]" style={textStyle("saved")}>
             Saved
           </span>
         </button>
 
         <button onClick={() => onTabChange("profile")} className={tabClass("profile")}>
-          <User className="w-6 h-6" style={iconStyle("profile")} />
-          <span className="text-[11px] font-semibold" style={textStyle("profile")}>
+          <User className="h-5 w-5 sm:h-6 sm:w-6" style={iconStyle("profile")} />
+          <span className="truncate text-[10px] font-semibold sm:text-[11px]" style={textStyle("profile")}>
             Profile
           </span>
         </button>

@@ -135,10 +135,10 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F7F9] text-black">
+    <div className="min-h-screen overflow-x-hidden bg-[#F6F7F9] text-black">
       {showNav && <TopNav />}
 
-      <div className="min-h-screen pb-24 md:pb-0 pt-0 md:pt-24">
+      <div className="min-h-screen overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] pt-0 md:pb-0 md:pt-24">
         {activeTab === "feed" && <FeedTab />}
         {activeTab === "applications" && <ApplicationsTab />}
         {activeTab === "calendar" && <CalendarTab />}

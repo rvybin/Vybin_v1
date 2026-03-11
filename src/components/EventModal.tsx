@@ -98,7 +98,7 @@ export function EventModal({
     });
 
   const modal = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center p-2 sm:items-center sm:p-4">
       <button
         aria-label="Close"
         onClick={onClose}
@@ -106,16 +106,16 @@ export function EventModal({
       />
 
       <div
-        className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-black/10 bg-white shadow-2xl"
-        style={{ maxHeight: "90vh", display: "flex", flexDirection: "column" }}
+        className="relative w-full max-w-2xl overflow-hidden rounded-[24px] border border-black/10 bg-white shadow-2xl sm:rounded-3xl"
+        style={{ maxHeight: "min(92vh, 860px)", display: "flex", flexDirection: "column" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top bar */}
         <div className="relative border-b border-black/10">
-          <div className="px-6 py-5">
+          <div className="px-4 py-4 sm:px-6 sm:py-5">
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-black">
+              <div className="min-w-0">
+                <h2 className="break-words text-lg font-extrabold tracking-tight text-black sm:text-2xl">
                   {event.title}
                 </h2>
                 {event.organization && (
@@ -149,7 +149,7 @@ export function EventModal({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {/* Hero image */}
           {event.image_url && (
             <div
@@ -167,9 +167,9 @@ export function EventModal({
                 <span>{formatDate(event.date)}</span>
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-black/70">
+              <div className="flex items-start gap-2 text-sm text-black/70">
                 <MapPin className="w-4 h-4" />
-                <span>{event.location ?? "McGill University"}</span>
+                <span className="break-words">{event.location ?? "McGill University"}</span>
               </div>
 
               {event.prize && (
@@ -210,7 +210,7 @@ export function EventModal({
         </div>
 
         {/* Footer CTA */}
-        <div className="p-5 border-t border-black/10 bg-white">
+        <div className="border-t border-black/10 bg-white p-4 sm:p-5">
           <div className="flex flex-col gap-3">
             {event.link ? (
               <a

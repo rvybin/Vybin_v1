@@ -239,7 +239,7 @@ export function SavedTab() {
     const hasImage = !!ev.image_url;
 
     return (
-      <div className="group relative rounded-2xl border border-black/10 bg-white shadow-sm transition hover:shadow-md overflow-hidden">
+      <div className="group relative overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm transition hover:shadow-md">
         {/* Saved pill (top-left) */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-full bg-white border border-black/10 px-3 py-1">
           <Bookmark className="w-4 h-4" style={{ color: MCGILL_RED }} />
@@ -257,10 +257,10 @@ export function SavedTab() {
           <Trash2 className="w-4 h-4" style={{ color: "rgba(0,0,0,0.65)" }} />
         </button>
 
-        <div className="flex">
+        <div className="flex flex-col sm:flex-row">
           {/* Left panel: image if available, else big emoji */}
           <div
-            className="w-52 min-w-[208px] flex items-center justify-center overflow-hidden"
+            className="flex h-36 w-full items-center justify-center overflow-hidden sm:h-auto sm:w-52 sm:min-w-[208px]"
             style={{
               background: hasImage ? "#111827" : `linear-gradient(135deg, ${accent} 0%, rgba(237,27,47,0.16) 100%)`,
             }}
@@ -273,12 +273,12 @@ export function SavedTab() {
           </div>
 
           {/* Right content */}
-          <div className="flex-1 p-5">
+          <div className="flex-1 p-4 sm:p-5">
             {/* reserve space for the top-right delete button */}
-            <div className="pr-12">
-              <div className="flex items-start justify-between gap-3">
+            <div className="pr-0 sm:pr-12">
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between">
                 <div className="min-w-0">
-                  <h3 className="text-[17px] font-extrabold text-black leading-snug">{decodeText(ev.title)}</h3>
+                  <h3 className="break-words text-[17px] font-extrabold leading-snug text-black">{decodeText(ev.title)}</h3>
                   {ev.organization && <p className="text-sm text-black/60 mt-1">{decodeText(ev.organization)}</p>}
                 </div>
 
@@ -306,10 +306,10 @@ export function SavedTab() {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 onClick={() => openModal(ev)}
-                className="rounded-xl px-4 py-2 text-sm font-semibold border border-black/15 bg-white transition hover:bg-[#ED1B2F] hover:border-[#ED1B2F] hover:text-white flex items-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-black/15 bg-white px-4 py-2 text-sm font-semibold transition hover:border-[#ED1B2F] hover:bg-[#ED1B2F] hover:text-white sm:w-auto"
               >
                 <Eye className="w-4 h-4" />
                 Details
@@ -323,11 +323,11 @@ export function SavedTab() {
 
   return (
     <>
-      <div className="flex-1 pb-24" style={{ background: LIGHT_BG }}>
+      <div className="flex-1 overflow-x-hidden pb-24" style={{ background: LIGHT_BG }}>
         {/* Header */}
-        <div className="px-5 pt-6 pb-5">
+        <div className="px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-6">
           <div className="max-w-5xl mx-auto">
-            <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+            <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
                 Saved
               </h1>
@@ -338,7 +338,7 @@ export function SavedTab() {
         </div>
 
         <div
-          className={`px-5 pb-8 max-w-5xl mx-auto transition-all duration-500 ${
+          className={`mx-auto max-w-5xl px-4 pb-8 transition-all duration-500 sm:px-5 ${
             fadeIn ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
           }`}
         >
