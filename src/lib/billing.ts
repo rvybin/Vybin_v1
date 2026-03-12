@@ -5,12 +5,7 @@ export function hasPremiumCheckout() {
 }
 
 export function openPremiumCheckout() {
-  if (!premiumCheckoutUrl) {
-    window.alert("Stripe premium checkout is not configured yet. Add VITE_STRIPE_PREMIUM_LINK in your environment.");
-    return;
-  }
-
-  window.open(premiumCheckoutUrl, "_blank", "noopener,noreferrer");
+  window.alert("Vybin Premium is coming soon.");
 }
 
 export function getPremiumCheckoutUrl() {
