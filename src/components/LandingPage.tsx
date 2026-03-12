@@ -419,13 +419,11 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
           <div className="mx-auto max-w-6xl">
             <div className="border-t border-white/10 py-16 text-center">
               <p className="mb-4 text-lg font-semibold text-white/85 md:text-xl">
-                Built to make campus opportunities easier to discover with{" "}
-                <span className="font-semibold text-[#00BFFF]">vybin'</span>.
+                Discover what actually matters to you on campus.
               </p>
 
               <p className="mx-auto max-w-3xl text-white/60">
-                Vybin was created to cut through the noise around campus life and give students one clear place to
-                find relevant events, stay organized, and follow through on the opportunities that matter.
+                <span className="font-semibold text-[#00BFFF]">Vybin</span> filters the noise so you never miss what matters.
               </p>
 
               <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
