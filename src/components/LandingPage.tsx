@@ -191,14 +191,14 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
               <p
                 className={[
-                  "mx-auto mt-6 max-w-2xl text-sm text-white/65 transition-all duration-700 delay-200 sm:text-base md:text-lg",
+                  "mx-auto mt-6 max-w-4xl text-sm text-white/65 transition-all duration-700 delay-200 sm:text-base md:text-[1.02rem]",
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
-                Vybin helps university students discover campus events, save what they like, and keep track of what
-                they've applied to, all in one place.
-                <br />
-                <span className="text-white/50">
+                <span className="md:whitespace-nowrap">
+                  Vybin helps students discover the most relevant events and opportunities happening on their campus.
+                </span>
+                <span className="mt-3 block text-white/50">
                   Starting with{" "}
                   <span className="font-semibold text-[#FF4D5A] drop-shadow-[0_0_12px_rgba(255,77,90,0.55)]">
                     McGill
@@ -235,7 +235,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   mounted ? "opacity-100" : "opacity-0",
                 ].join(" ")}
               >
-                Sign in with Google or email. No spam.
+                Sign in with Google or email.
               </div>
             </div>
           </div>
@@ -249,7 +249,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 <span className="text-[#00BFFF] drop-shadow-[0_0_18px_rgba(0,191,255,0.65)]">Vybe</span>.
               </h2>
               <p className="mx-auto mt-3 max-w-4xl text-sm text-white/60 sm:text-base md:whitespace-nowrap">
-                A clean experience that helps you discover events, stay organized, and actually show up.
+                A focused platform for discovering relevant campus events and tracking the opportunities that matter.
               </p>
             </div>
 
@@ -320,18 +320,20 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
         <RevealSection id="premium" className="scroll-mt-24 px-4 pb-16 sm:px-6 sm:pb-20">
           <div className="mx-auto max-w-7xl">
-            <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,10,20,0.92),rgba(7,10,18,0.98))] px-5 py-12 shadow-[0_18px_60px_rgba(0,0,0,0.42)] backdrop-blur-xl sm:px-8">
+            <div className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,10,20,0.92),rgba(7,10,18,0.98))] px-5 py-12 shadow-[0_18px_60px_rgba(0,0,0,0.42)] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_26px_80px_rgba(0,191,255,0.14)] sm:px-8">
               <div className="pointer-events-none absolute inset-0">
                 <div className="absolute -top-32 left-1/2 h-[360px] w-[360px] -translate-x-1/2 rounded-full bg-[#00BFFF]/10 blur-[130px]" />
-                <div className="absolute bottom-[-120px] right-[-60px] h-[300px] w-[300px] rounded-full bg-[#FF4FD8]/10 blur-[120px]" />
+                <div className="absolute bottom-[-120px] right-[-60px] h-[300px] w-[300px] rounded-full bg-[#4C6EF5]/10 blur-[120px]" />
+                <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  <div className="absolute inset-[-1px] rounded-[32px] border border-[#00BFFF]/25 shadow-[0_0_90px_rgba(0,191,255,0.16)]" />
+                </div>
               </div>
 
               <div className="relative">
                 <div className="mx-auto max-w-3xl text-center">
                   <h3 className="text-3xl font-extrabold tracking-tight sm:text-5xl">Choose Your Plan</h3>
-                  <p className="mx-auto mt-4 max-w-2xl text-sm text-white/58 sm:text-lg">
-                    Start free and upgrade when you're ready for smarter student tools, better organization, and
-                    premium Vybin features.
+                  <p className="mx-auto mt-4 max-w-4xl text-sm text-white/58 sm:text-base md:whitespace-nowrap">
+                    Start free and upgrade when you're ready for smarter student tools, better organization, and premium Vybin features.
                   </p>
                 </div>
 
@@ -360,8 +362,8 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                     </button>
                   </div>
 
-                  <div className="relative rounded-[28px] border border-[#FF4FD8]/55 bg-[linear-gradient(180deg,rgba(21,13,33,0.96),rgba(14,16,30,0.98))] p-7 shadow-[0_0_55px_rgba(255,79,216,0.14)]">
-                    <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#FF4FD8] px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-white shadow-[0_0_24px_rgba(255,79,216,0.4)]">
+                  <div className="relative rounded-[28px] border border-[#00BFFF]/45 bg-[linear-gradient(180deg,rgba(8,24,38,0.96),rgba(14,16,30,0.98))] p-7 shadow-[0_0_55px_rgba(0,191,255,0.14)]">
+                    <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-white shadow-[0_0_24px_rgba(0,191,255,0.35)]">
                       Most Popular
                     </div>
 
@@ -384,7 +386,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
                     <button
                       onClick={openPremiumCheckout}
-                      className="mt-9 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#FF4FD8] to-[#FF2F92] px-5 py-3.5 font-semibold text-white shadow-[0_0_28px_rgba(255,79,216,0.28)] transition hover:-translate-y-[1px] hover:shadow-[0_0_42px_rgba(255,79,216,0.42)]"
+                      className="mt-9 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] px-5 py-3.5 font-semibold text-white shadow-[0_0_28px_rgba(0,191,255,0.28)] transition hover:-translate-y-[1px] hover:shadow-[0_0_42px_rgba(0,191,255,0.42)]"
                     >
                       Upgrade to Premium
                       <ArrowRight className="h-4 w-4" />
@@ -413,13 +415,13 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
           <div className="mx-auto max-w-6xl">
             <div className="border-t border-white/10 py-16 text-center">
               <p className="mb-4 text-lg font-semibold text-white/85 md:text-xl">
-                Built by a computer engineer so you can stop searching and start{" "}
+                Built to make campus opportunities easier to discover with{" "}
                 <span className="font-semibold text-[#00BFFF]">vybin'</span>.
               </p>
 
               <p className="mx-auto max-w-3xl text-white/60">
-                I made Vybin because I was tired of missing events, losing track of applications, and wasting time
-                searching everywhere. So I built the tool I wished existed.
+                Vybin was created to cut through the noise around campus life and give students one clear place to
+                find relevant events, stay organized, and follow through on the opportunities that matter.
               </p>
 
               <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
