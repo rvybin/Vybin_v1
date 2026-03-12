@@ -83,9 +83,9 @@ export function LoginScreen() {
     <div className="flex min-h-screen items-center justify-center overflow-x-hidden bg-gradient-to-br from-[#0B0C10] via-[#1a1d29] to-[#0B0C10] px-4 py-8 sm:p-4">
       <div className="w-full max-w-md space-y-6 sm:space-y-8">
         <div className="text-center">
-          <div className="mb-3 text-4xl font-bold sm:text-5xl">
+          <div className="mb-3 text-4xl font-extrabold tracking-tight sm:text-5xl">
             <span className="text-white">vyb</span>
-            <span className="text-[#00BFFF]">in</span>
+            <span className="bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] bg-clip-text text-transparent">in</span>
           </div>
           <p className="text-base text-gray-400 sm:text-lg">Discover. Connect. Vybe.</p>
         </div>
