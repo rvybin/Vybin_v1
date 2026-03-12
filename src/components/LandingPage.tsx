@@ -338,7 +338,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 </div>
 
                 <div className="mt-10 grid grid-cols-1 gap-6 xl:grid-cols-2">
-                  <div className="rounded-[28px] border border-white/10 bg-[#0F1220]/85 p-7 shadow-[0_18px_45px_rgba(0,0,0,0.28)]">
+                  <div className="flex h-full flex-col rounded-[28px] border border-white/10 bg-[#0F1220]/85 p-7 shadow-[0_18px_45px_rgba(0,0,0,0.28)]">
                     <div className="text-center">
                       <h4 className="text-3xl font-extrabold">Free</h4>
                       <div className="mt-4 flex items-end justify-center gap-1">
@@ -356,13 +356,13 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
                     <button
                       onClick={onGetStarted}
-                      className="mt-9 inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 font-semibold text-white/90 transition hover:bg-white/10"
+                      className="mt-auto inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 pt-9 font-semibold text-white/90 transition hover:bg-white/10"
                     >
                       Get Started Free
                     </button>
                   </div>
 
-                  <div className="relative rounded-[28px] border border-[#00BFFF]/45 bg-[linear-gradient(180deg,rgba(8,24,38,0.96),rgba(14,16,30,0.98))] p-7 shadow-[0_0_55px_rgba(0,191,255,0.14)]">
+                  <div className="relative flex h-full flex-col rounded-[28px] border border-[#00BFFF]/45 bg-[linear-gradient(180deg,rgba(8,24,38,0.96),rgba(14,16,30,0.98))] p-7 shadow-[0_0_55px_rgba(0,191,255,0.14)]">
                     <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-white shadow-[0_0_24px_rgba(0,191,255,0.35)]">
                       Most Popular
                     </div>
@@ -386,7 +386,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
                     <button
                       onClick={openPremiumCheckout}
-                      className="mt-9 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] px-5 py-3.5 font-semibold text-white shadow-[0_0_28px_rgba(0,191,255,0.28)] transition hover:-translate-y-[1px] hover:shadow-[0_0_42px_rgba(0,191,255,0.42)]"
+                      className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] px-5 py-3.5 pt-9 font-semibold text-white shadow-[0_0_28px_rgba(0,191,255,0.28)] transition hover:-translate-y-[1px] hover:shadow-[0_0_42px_rgba(0,191,255,0.42)]"
                     >
                       Upgrade to Premium
                       <ArrowRight className="h-4 w-4" />
