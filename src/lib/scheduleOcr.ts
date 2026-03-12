@@ -1,4 +1,3 @@
-// src/lib/scheduleOcr.ts
 import { createWorker } from "tesseract.js";
 
 export type ParsedClass = {
@@ -6,119 +5,131 @@ export type ParsedClass = {
   title: string;
   course_code: string;
   location?: string | null;
-  startTime: string; // "HH:MM"
-  endTime: string; // "HH:MM"
+  startTime: string;
+  endTime: string;
   notes?: string | null;
 };
 
-const DAYS: ParsedClass["day"][] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+type DayCode = ParsedClass["day"];
 
-function normalize(s: string) {
-  return (s ?? "")
+type OcrWord = {
+  text: string;
+  bbox?: { x0: number; y0: number; x1: number; y1: number };
+  confidence?: number;
+};
+
+const DAYS: DayCode[] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+const DAY_NAMES: Record<DayCode, string> = {
+  MO: "monday",
+  TU: "tuesday",
+  WE: "wednesday",
+  TH: "thursday",
+  FR: "friday",
+  SA: "saturday",
+  SU: "sunday",
+};
+
+function normalizeText(value: string) {
+  return (value ?? "")
     .toLowerCase()
-    .replace(/[^\w:]+/g, " ")
+    .replace(/[|]/g, "i")
+    .replace(/[^\w:\- ]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function to24(hm: string, ap?: string) {
-  const [h0, m0] = hm.split(":").map(Number);
-  let h = h0;
-  const a = (ap ?? "").toLowerCase();
-  if (a === "pm" && h !== 12) h += 12;
-  if (a === "am" && h === 12) h = 0;
-  return `${String(h).padStart(2, "0")}:${String(m0).padStart(2, "0")}`;
+function cleanDisplayText(value: string) {
+  return (value ?? "")
+    .replace(/[^\w\s:&()\-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function pad24(hm: string) {
-  const [h, m] = hm.split(":");
-  return `${String(Number(h)).padStart(2, "0")}:${m}`;
+function padTime(hours: number, minutes: number) {
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function to24Hour(hours: number, minutes: number, meridiem: string) {
+  let h = hours;
+  const ap = meridiem.toLowerCase();
+  if (ap === "pm" && h !== 12) h += 12;
+  if (ap === "am" && h === 12) h = 0;
+  return padTime(h, minutes);
 }
 
 function parseTimeRange(line: string): { start: string; end: string } | null {
-  const x = line.replace(/\s+/g, " ").trim();
+  const normalized = line
+    .replace(/[–—]/g, "-")
+    .replace(/\s*-\s*/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
 
-  const m =
-    x.match(/(\d{1,2}:\d{2})\s*(am|pm)?\s*[-–]\s*(\d{1,2}:\d{2})\s*(am|pm)?/i) ||
-    x.match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/i);
+  const withMeridiem =
+    normalized.match(
+      /(\d{1,2}):(\d{2})\s*(am|pm)\s*-\s*(\d{1,2}):(\d{2})\s*(am|pm)/i
+    ) ||
+    normalized.match(
+      /(\d{1,2}):(\d{2})\s*(am|pm)\s*-\s*(\d{1,2}):(\d{2})/i
+    );
 
-  if (!m) return null;
-
-  const t1 = m[1];
-  const ap1 = m[2];
-  const t2 = (m[3] ?? m[2]) as string;
-  const ap2 = m[4];
-
-  const start = ap1 ? to24(t1, ap1) : pad24(t1);
-  const end = ap2 ? to24(t2, ap2) : pad24(t2);
-
-  return { start, end };
-}
-
-function looksLikeHourLabel(line: string) {
-  const n = normalize(line);
-  return /^(\d{1,2})(am|pm)$/.test(n);
-}
-
-/**
- * Merge "C O M P" -> "COMP"
- * and also normalize common OCR digit/letter confusions in numeric parts.
- */
-function squashSpacedLetters(raw: string) {
-  const tokens = raw.split(/\s+/).filter(Boolean);
-
-  const out: string[] = [];
-  let buf: string[] = [];
-
-  const flush = () => {
-    if (buf.length) {
-      out.push(buf.join(""));
-      buf = [];
-    }
-  };
-
-  for (const t of tokens) {
-    if (/^[A-Za-z]$/.test(t)) {
-      buf.push(t);
-    } else {
-      flush();
-      out.push(t);
-    }
+  if (withMeridiem) {
+    const [, sh, sm, sap, eh, em, eap] = withMeridiem;
+    return {
+      start: to24Hour(Number(sh), Number(sm), sap),
+      end: to24Hour(Number(eh), Number(em), eap ?? sap),
+    };
   }
-  flush();
 
-  return out.join(" ");
+  const withoutMeridiem = normalized.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/i);
+  if (!withoutMeridiem) return null;
+
+  const [, sh, sm, eh, em] = withoutMeridiem;
+  return {
+    start: padTime(Number(sh), Number(sm)),
+    end: padTime(Number(eh), Number(em)),
+  };
 }
 
-function fixOcrDigits(s: string) {
-  // Only apply in number-ish contexts (keeps building names intact)
-  // Replace O->0, I/l->1 when adjacent to digits or hyphens.
-  return s
-    .replace(/(?<=\d)[Oo](?=\d)/g, "0")
-    .replace(/(?<=\d)[Il](?=\d)/g, "1")
-    .replace(/(?<=-)[Oo](?=\d)/g, "0")
-    .replace(/(?<=-)[Il](?=\d)/g, "1")
-    .replace(/(?<=\d)[Oo](?=-)/g, "0")
-    .replace(/(?<=\d)[Il](?=-)/g, "1");
+function isHourLabel(line: string) {
+  return /^(\d{1,2})(?::\d{2})?\s*(am|pm)$/i.test(normalizeText(line));
+}
+
+function normalizeCourseToken(value: string) {
+  return value
+    .replace(/(?<=\d)[oO](?=\d)/g, "0")
+    .replace(/(?<=\d)[iIlL](?=\d)/g, "1")
+    .replace(/[–—]/g, "-");
 }
 
 function parseCourseCode(line: string): string | null {
-  // Clean and stabilize spacing/dashes
-  let raw = line.replace(/[^\w\s-–]/g, " ").replace(/\s+/g, " ").trim();
-  raw = squashSpacedLetters(raw);
-  raw = fixOcrDigits(raw);
+  const cleaned = normalizeCourseToken(cleanDisplayText(line).toUpperCase());
 
-  const u = raw.toUpperCase().replace(/–/g, "-");
+  const direct = cleaned.match(/\b([A-Z]{3,5})\s*(\d{3})[- ](\d{3})\b/);
+  if (direct) return `${direct[1]} ${direct[2]}-${direct[3]}`;
 
-  // direct: "MATH 141-002" / "COMP 202-001" / "WCOM 206-716"
-  const m1 = u.match(/\b([A-Z]{3,5})\s*(\d{3})-(\d{3})\b/);
-  if (m1) return `${m1[1]}${m1[2]}-${m1[3]}`;
-
-  // glued: "MATH141002" => "MATH141-002"
-  const m2 = u.match(/\b([A-Z]{3,5})(\d{3})(\d{3})\b/);
-  if (m2) return `${m2[1]}${m2[2]}-${m2[3]}`;
+  const compact = cleaned.match(/\b([A-Z]{3,5})(\d{3})(\d{3})\b/);
+  if (compact) return `${compact[1]} ${compact[2]}-${compact[3]}`;
 
   return null;
+}
+
+function cleanLocation(value: string) {
+  let cleaned = cleanDisplayText(value)
+    .replace(/\b\d+\s*times?\b/gi, "")
+    .replace(/\bhrs?\/wk\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  cleaned = cleaned
+    .replace(/\bstrathcona anatomy dentistry\b/gi, "Strathcona Anatomy & Dentistry")
+    .replace(/\badams building\b/gi, "Adams Building")
+    .replace(/\bleacock building\b/gi, "Leacock Building")
+    .replace(/\bmaass chemistry building\b/gi, "Maass Chemistry Building")
+    .replace(/\bwong building\b/gi, "Wong Building")
+    .replace(/\btrottier building\b/gi, "Trottier Building")
+    .trim();
+
+  return cleaned.length > 72 ? cleaned.slice(0, 72).trim() : cleaned;
 }
 
 async function fileToImageBitmap(file: File): Promise<ImageBitmap> {
@@ -132,40 +143,28 @@ async function fileToImageBitmap(file: File): Promise<ImageBitmap> {
 }
 
 async function preprocessToPng(file: File): Promise<Blob> {
-  const bmp = await fileToImageBitmap(file);
+  const bitmap = await fileToImageBitmap(file);
 
-  const targetMaxW = 4200;
-  const scale = Math.max(1, Math.min(4, targetMaxW / bmp.width));
+  const targetWidth = 4200;
+  const scale = Math.max(1, Math.min(4, targetWidth / bitmap.width));
 
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bmp.width * scale);
-  canvas.height = Math.round(bmp.height * scale);
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
 
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas not supported");
+  if (!ctx) throw new Error("Canvas not supported in this browser.");
 
-  // keep thin blue text readable
-  ctx.filter = "grayscale(1) contrast(1.85) brightness(1.12)";
-  ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  ctx.filter = "grayscale(1) contrast(1.95) brightness(1.12)";
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
 
-  const out = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png", 1);
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Image preprocessing failed."))), "image/png", 1);
   });
-
-  return out;
 }
 
-/**
- * More reliable column splitter:
- * - finds weekday header line
- * - uses detected weekday start positions
- * - builds column boundaries using midpoints between starts
- * - interpolates missing day starts (rare)
- */
-function splitTextIntoDayColumns(text: string): Record<ParsedClass["day"], string[]> {
-  const lines = (text ?? "").replace(/\r/g, "").split("\n");
-
-  const out: Record<ParsedClass["day"], string[]> = {
+function buildColumnLinesFromWords(words: OcrWord[]): Record<DayCode, string[]> | null {
+  const output: Record<DayCode, string[]> = {
     MO: [],
     TU: [],
     WE: [],
@@ -175,250 +174,167 @@ function splitTextIntoDayColumns(text: string): Record<ParsedClass["day"], strin
     SU: [],
   };
 
-  // Find a header line with multiple weekday names
-  const headerIdx = lines.findIndex((l) => {
-    const low = l.toLowerCase();
-    const hits =
-      (low.includes("monday") ? 1 : 0) +
-      (low.includes("tuesday") ? 1 : 0) +
-      (low.includes("wednesday") ? 1 : 0) +
-      (low.includes("thursday") ? 1 : 0) +
-      (low.includes("friday") ? 1 : 0);
-    return hits >= 3;
-  });
-
-  if (headerIdx === -1) return out;
-
-  const header = lines[headerIdx];
-
-  // Establish a stable line length for slicing
-  const lineLen = Math.max(
-    header.length,
-    ...lines.slice(headerIdx, headerIdx + 60).map((l) => l.length)
-  );
-
-  // Raw detected starts
-  const detected: Record<ParsedClass["day"], number> = {
-    MO: header.toLowerCase().indexOf("monday"),
-    TU: header.toLowerCase().indexOf("tuesday"),
-    WE: header.toLowerCase().indexOf("wednesday"),
-    TH: header.toLowerCase().indexOf("thursday"),
-    FR: header.toLowerCase().indexOf("friday"),
-    SA: header.toLowerCase().indexOf("saturday"),
-    SU: header.toLowerCase().indexOf("sunday"),
-  };
-
-  // List of found starts (for step estimation)
-  const found = DAYS.map((d, idx) => ({ d, idx, pos: detected[d] }))
-    .filter((x) => x.pos >= 0)
-    .sort((a, b) => a.pos - b.pos);
-
-  if (found.length < 3) return out;
-
-  // Estimate average step between day columns
-  let stepSum = 0;
-  let stepCount = 0;
-  for (let i = 0; i < found.length - 1; i++) {
-    const a = found[i];
-    const b = found[i + 1];
-    const idxGap = Math.max(1, b.idx - a.idx);
-    stepSum += (b.pos - a.pos) / idxGap;
-    stepCount++;
-  }
-  const avgStep = stepCount ? stepSum / stepCount : Math.max(12, Math.floor(lineLen / 7));
-
-  // Fill starts for all 7 days (interpolate / extrapolate if missing)
-  const starts: number[] = new Array(7).fill(-1);
-  for (const f of found) starts[f.idx] = f.pos;
-
-  // Left-to-right fill
-  for (let i = 0; i < 7; i++) {
-    if (starts[i] >= 0) continue;
-
-    // find nearest left and right known
-    let L = i - 1;
-    while (L >= 0 && starts[L] < 0) L--;
-    let R = i + 1;
-    while (R < 7 && starts[R] < 0) R++;
-
-    if (L >= 0 && R < 7) {
-      // interpolate
-      const t = (i - L) / (R - L);
-      starts[i] = Math.round(starts[L] + t * (starts[R] - starts[L]));
-    } else if (L >= 0) {
-      starts[i] = Math.round(starts[L] + avgStep * (i - L));
-    } else if (R < 7) {
-      starts[i] = Math.round(starts[R] - avgStep * (R - i));
-    } else {
-      starts[i] = Math.round(i * avgStep);
-    }
-  }
-
-  // Build bounds using MIDPOINTS (this is the key fix)
-  const bounds = starts.map((s, i) => {
-    const next = i < 6 ? starts[i + 1] : lineLen;
-    const e = i < 6 ? Math.round((s + next) / 2) : lineLen;
-    const prev = i > 0 ? starts[i - 1] : 0;
-    const ss = i > 0 ? Math.round((prev + s) / 2) : Math.max(0, s);
-    return { s: Math.max(0, ss), e: Math.max(0, e) };
-  });
-
-  // Slice every line under the header
-  for (let li = headerIdx + 1; li < lines.length; li++) {
-    const l = lines[li].padEnd(lineLen, " ");
-
-    for (let di = 0; di < 7; di++) {
-      const seg = l.slice(bounds[di].s, bounds[di].e);
-      const trimmed = seg.replace(/\s+/g, " ").trim();
-      if (trimmed) out[DAYS[di]].push(trimmed);
-    }
-  }
-
-  return out;
-}
-
-function cleanLocation(raw: string): string {
-  let s = raw.replace(/\s+/g, " ").trim();
-
-  // Drop obvious non-location noise
-  s = s
-    .replace(/\b(\d+\s*times?|hrs?\/wk)\b/gi, "")
-    .replace(/\b(am|pm)\b/gi, "")
-    .replace(/\b\d{1,2}:\d{2}\b/g, "")
-    .replace(/\s+[-–]\s+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  // If we have a "Building" phrase, keep from that phrase onward
-  const buildingIdx = s.toLowerCase().indexOf("building");
-  if (buildingIdx !== -1) {
-    // keep a bit before "Building" (e.g., "Adams Building AUD 4817")
-    const start = Math.max(0, buildingIdx - 20);
-    s = s.slice(start).trim();
-  }
-
-  // Normalize known McGill quirks
-  s = s
-    .replace(/\bstrathcona anatomy dentistry\b/gi, "Strathcona Anatomy & Dentistry")
-    .replace(/\bmaass\b/gi, "Maass")
-    .replace(/\bleacock\b/gi, "Leacock")
-    .replace(/\bwong\b/gi, "Wong")
-    .replace(/\btrotter\b/gi, "Trottier")
-    .trim();
-
-  // Avoid absurdly long locations (means leakage)
-  if (s.length > 60) s = s.slice(0, 60).trim();
-
-  return s;
-}
-
-/**
- * Parse one day's column lines into class entries.
- */
-function parseDayColumn(day: ParsedClass["day"], lines: string[]): ParsedClass[] {
-  const res: ParsedClass[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (looksLikeHourLabel(line)) continue;
-
-    const code = parseCourseCode(line);
-    if (!code) continue;
-
-    // find time within next few lines
-    let time: { start: string; end: string } | null = null;
-    let tIdx = -1;
-
-    for (let j = i; j < Math.min(i + 10, lines.length); j++) {
-      const tr = parseTimeRange(lines[j]);
-      if (tr) {
-        time = tr;
-        tIdx = j;
-        break;
-      }
-    }
-
-    if (!time) continue;
-
-    // location is usually next line after time, but can be 2 lines after
-    let location: string | null = null;
-
-    for (let k = tIdx + 1; k < Math.min(tIdx + 5, lines.length); k++) {
-      const cand = lines[k].trim();
-      if (!cand) continue;
-      if (looksLikeHourLabel(cand)) continue;
-      if (parseTimeRange(cand)) continue;
-
-      // stop if next class starts
-      if (parseCourseCode(cand)) break;
-
-      const n = normalize(cand);
-      if (n.length < 3) continue;
-
-      // prefer lines with building-ish words
-      const buildingish =
-        /building|strathcona|dentistry|leacock|wong|trottier|maass|adams/i.test(cand);
-
-      if (buildingish) {
-        location = cleanLocation(cand);
-        break;
-      }
-
-      // fallback: first reasonable line
-      if (!location && n.length <= 80) {
-        location = cleanLocation(cand);
-      }
-    }
-
-    res.push({
+  const headers = DAYS.map((day) => {
+    const headerWord = words.find((word) => normalizeText(word.text) === DAY_NAMES[day] && word.bbox);
+    if (!headerWord?.bbox) return null;
+    return {
       day,
-      title: code,
-      course_code: code,
-      location: location || null,
-      startTime: time.start,
-      endTime: time.end,
-      notes: null,
+      centerX: (headerWord.bbox.x0 + headerWord.bbox.x1) / 2,
+      centerY: (headerWord.bbox.y0 + headerWord.bbox.y1) / 2,
+    };
+  }).filter(Boolean) as { day: DayCode; centerX: number; centerY: number }[];
+
+  if (headers.length < 5) return null;
+
+  const orderedHeaders = [...headers].sort((a, b) => a.centerX - b.centerX);
+  const bounds = orderedHeaders.map((header, index) => {
+    const previous = orderedHeaders[index - 1];
+    const next = orderedHeaders[index + 1];
+    return {
+      day: header.day,
+      startX: previous ? (previous.centerX + header.centerX) / 2 : header.centerX - 140,
+      endX: next ? (header.centerX + next.centerX) / 2 : header.centerX + 140,
+      minY: header.centerY + 8,
+    };
+  });
+
+  const firstColumnStart = Math.min(...bounds.map((bound) => bound.startX));
+  const groupedByDay = new Map<DayCode, { y: number; words: { x: number; text: string }[] }[]>();
+
+  for (const bound of bounds) groupedByDay.set(bound.day, []);
+
+  for (const word of words) {
+    if (!word.bbox) continue;
+
+    const normalizedWord = normalizeText(word.text);
+    if (!normalizedWord) continue;
+
+    const centerX = (word.bbox.x0 + word.bbox.x1) / 2;
+    const centerY = (word.bbox.y0 + word.bbox.y1) / 2;
+
+    if (centerX < firstColumnStart - 10 && isHourLabel(normalizedWord)) continue;
+
+    const bound = bounds.find((candidate) => centerX >= candidate.startX && centerX < candidate.endX);
+    if (!bound || centerY <= bound.minY) continue;
+
+    const bucket = groupedByDay.get(bound.day);
+    if (!bucket) continue;
+
+    const existingLine = bucket.find((line) => Math.abs(line.y - centerY) <= 12);
+    const payload = { x: word.bbox.x0, text: cleanDisplayText(word.text) };
+
+    if (existingLine) {
+      existingLine.words.push(payload);
+    } else {
+      bucket.push({ y: centerY, words: [payload] });
+    }
+  }
+
+  for (const day of DAYS) {
+    const lines = groupedByDay.get(day) ?? [];
+    lines
+      .sort((a, b) => a.y - b.y)
+      .forEach((line) => {
+        const text = line.words
+          .sort((a, b) => a.x - b.x)
+          .map((word) => word.text)
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        if (text) output[day].push(text);
+      });
+  }
+
+  return output;
+}
+
+function parseDayColumn(day: DayCode, lines: string[]): ParsedClass[] {
+  const results: ParsedClass[] = [];
+
+  for (let index = 0; index < lines.length; index++) {
+    const current = lines[index];
+    if (isHourLabel(current)) continue;
+
+    const courseCode = parseCourseCode(current);
+    if (!courseCode) continue;
+
+    let timeRange: { start: string; end: string } | null = null;
+    let timeLineIndex = -1;
+
+    for (let probe = index; probe < Math.min(index + 6, lines.length); probe++) {
+      const parsed = parseTimeRange(lines[probe]);
+      if (parsed) {
+        timeRange = parsed;
+        timeLineIndex = probe;
+        break;
+      }
+    }
+
+    if (!timeRange) continue;
+
+    const noteLines = lines
+      .slice(index + 1, timeLineIndex)
+      .filter((line) => !parseCourseCode(line) && !isHourLabel(line))
+      .map(cleanDisplayText)
+      .filter(Boolean);
+
+    const locationLines: string[] = [];
+    for (let probe = timeLineIndex + 1; probe < Math.min(timeLineIndex + 5, lines.length); probe++) {
+      const line = lines[probe];
+      if (!line || isHourLabel(line) || parseTimeRange(line)) continue;
+      if (parseCourseCode(line)) break;
+      locationLines.push(line);
+    }
+
+    const location = locationLines.length ? cleanLocation(locationLines.join(" ")) : null;
+    const notes = noteLines.length ? noteLines.join(" | ") : null;
+
+    results.push({
+      day,
+      title: courseCode,
+      course_code: courseCode,
+      location,
+      startTime: timeRange.start,
+      endTime: timeRange.end,
+      notes,
     });
 
-    // jump forward so we don't double-detect
-    i = Math.max(i, tIdx);
+    index = Math.max(index, timeLineIndex);
   }
 
-  // dedupe
-  const key = (x: ParsedClass) => `${x.day}|${x.course_code}|${x.startTime}|${x.endTime}`;
   const seen = new Set<string>();
-  return res.filter((x) => {
-    const k = key(x);
-    if (seen.has(k)) return false;
-    seen.add(k);
+  return results.filter((entry) => {
+    const key = `${entry.day}|${entry.course_code}|${entry.startTime}|${entry.endTime}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
 }
 
 export async function parseScheduleFromImage(file: File): Promise<ParsedClass[]> {
-  const img = await preprocessToPng(file);
-
+  const image = await preprocessToPng(file);
   const worker: any = await createWorker("eng");
+
   try {
-    await worker.setParameters(
-      {
-        tessedit_pageseg_mode: "6",
-        preserve_interword_spaces: "1",
-      } as any
-    );
+    await worker.setParameters({
+      tessedit_pageseg_mode: "11",
+      preserve_interword_spaces: "1",
+    } as any);
 
-    const result = await worker.recognize(img);
-    const fullText: string = (result as any)?.data?.text ?? "";
+    const result = await worker.recognize(image);
+    const words = (((result as any)?.data?.words ?? []) as OcrWord[]).filter((word) => word.text?.trim());
+    const columns = buildColumnLinesFromWords(words);
 
-    const cols = splitTextIntoDayColumns(fullText);
+    if (!columns) return [];
 
-    const out: ParsedClass[] = [];
-    for (const d of DAYS) {
-      out.push(...parseDayColumn(d, cols[d]));
-    }
+    const parsed = DAYS.flatMap((day) => parseDayColumn(day, columns[day]));
 
-    return out;
+    return parsed.sort((a, b) => {
+      const dayOrder = DAYS.indexOf(a.day) - DAYS.indexOf(b.day);
+      if (dayOrder !== 0) return dayOrder;
+      return a.startTime.localeCompare(b.startTime);
+    });
   } finally {
     await worker.terminate();
   }

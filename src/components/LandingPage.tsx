@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, ChevronDown, Instagram } from "lucide-react";
+import { openPremiumCheckout } from "../lib/billing";
 import { Footer } from "./Footer";
 
 interface LandingPageProps {
@@ -233,6 +234,63 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                       <div className="text-sm text-[#0B0C10]/80">{s.d}</div>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 pb-16 sm:px-6 sm:pb-20">
+          <div className="mx-auto max-w-6xl">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-md sm:p-8">
+              <div className="mx-auto max-w-3xl text-center">
+                <h3 className="text-2xl font-semibold sm:text-3xl">Vybin Premium</h3>
+                <p className="mt-3 text-sm text-white/60 sm:text-base">
+                  Turn a McGill timetable screenshot into a clean weekly class calendar inside Vybin. Built for
+                  students who want everything in one place.
+                </p>
+              </div>
+
+              <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <div className="rounded-3xl border border-white/10 bg-[#0F1320]/80 p-6">
+                  <div className="text-sm font-semibold uppercase tracking-[0.24em] text-white/45">Free</div>
+                  <div className="mt-3 text-4xl font-extrabold">$0</div>
+                  <p className="mt-2 text-white/55">Discover events, save them, and track applications.</p>
+
+                  <div className="mt-6 space-y-3 text-sm text-white/70">
+                    <div>Personalized event feed</div>
+                    <div>Saved events and application tracker</div>
+                    <div>Event reminders and smart notifications</div>
+                  </div>
+                </div>
+
+                <div className="relative rounded-3xl border border-[#00BFFF]/35 bg-gradient-to-br from-[#081423] to-[#11192D] p-6 shadow-[0_0_40px_rgba(0,191,255,0.12)]">
+                  <div className="absolute right-5 top-5 rounded-full bg-[#00BFFF] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#06121D]">
+                    Premium
+                  </div>
+                  <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[#7FDBFF]">Calendar Import</div>
+                  <div className="mt-3 flex items-end gap-2">
+                    <div className="text-4xl font-extrabold">$9</div>
+                    <div className="pb-1 text-white/55">per month</div>
+                  </div>
+                  <p className="mt-2 text-white/65">
+                    Upload a McGill timetable screenshot and instantly get a polished weekly calendar inside the app.
+                  </p>
+
+                  <div className="mt-6 space-y-3 text-sm text-white/80">
+                    <div>Automatic timetable screenshot parsing</div>
+                    <div>Beautiful in-app weekly class calendar</div>
+                    <div>Recurring class schedule blocks</div>
+                    <div>Stripe-powered premium checkout</div>
+                  </div>
+
+                  <button
+                    onClick={openPremiumCheckout}
+                    className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] px-5 py-3.5 font-semibold text-white shadow-[0_0_25px_rgba(0,191,255,0.35)] transition hover:-translate-y-[1px] hover:shadow-[0_0_34px_rgba(0,191,255,0.5)]"
+                  >
+                    Unlock Premium
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             </div>
