@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -24,6 +23,7 @@ function AppContent() {
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("feed");
+  const [navAvatarUrl, setNavAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) setShowAuth(false);
@@ -33,6 +33,28 @@ function AppContent() {
     if (user && !authLoading) checkOnboardingStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
+
+  useEffect(() => {
+    if (!user) {
+      setNavAvatarUrl(null);
+      return;
+    }
+
+    const cachedAvatar = localStorage.getItem(`avatar_url_${user.id}`);
+    if (cachedAvatar) setNavAvatarUrl(cachedAvatar);
+
+    const loadNavAvatar = async () => {
+      const { data } = await supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle();
+      const avatarUrl = data?.avatar_url ?? null;
+      setNavAvatarUrl(avatarUrl);
+
+      if (avatarUrl) {
+        localStorage.setItem(`avatar_url_${user.id}`, avatarUrl);
+      }
+    };
+
+    loadNavAvatar();
+  }, [user]);
 
   const checkOnboardingStatus = async () => {
     if (!user) return;
@@ -69,6 +91,7 @@ function AppContent() {
   };
 
   const showNav = !authLoading && !checkingOnboarding && !!user && isOnboarded;
+  const navAvatar = navAvatarUrl || (user ? localStorage.getItem(`avatar_url_${user.id}`) : null);
 
   if (authLoading) {
     return <div className="min-h-screen bg-[#0B0C10] flex items-center justify-center text-white/70">Loading…</div>;
@@ -130,9 +153,22 @@ function AppContent() {
               </div>
 
               {/* Sign out */}
-              <button onClick={() => supabase.auth.signOut()} className="text-sm font-semibold text-white/90 hover:text-white transition">
-                Sign out
-              </button>
+              <div className="flex items-center gap-3">
+                {navAvatar ? (
+                  <img
+                    src={navAvatar}
+                    alt="Profile"
+                    className="h-9 w-9 rounded-full border border-white/25 object-cover"
+                  />
+                ) : null}
+
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="text-sm font-semibold text-white/90 hover:text-white transition"
+                >
+                  Sign out
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -151,12 +187,22 @@ function AppContent() {
 
         <div className="text-sm font-semibold text-black/75">{tabLabelMap[activeTab]}</div>
 
-        <button
-          onClick={() => supabase.auth.signOut()}
-          className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-black/70 transition hover:bg-black/5"
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-2">
+          {navAvatar ? (
+            <img
+              src={navAvatar}
+              alt="Profile"
+              className="h-9 w-9 rounded-full border border-black/10 object-cover"
+            />
+          ) : null}
+
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-black/70 transition hover:bg-black/5"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </div>
   );

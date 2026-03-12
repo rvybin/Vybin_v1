@@ -615,14 +615,6 @@ export function FeedTab() {
                 <WindowPill days={7} />
                 <WindowPill days={14} />
                 <WindowPill days={30} />
-                <button hidden
-                  onClick={() => {}}
-                  className="ml-1 px-3 py-1.5 rounded-full text-xs font-semibold border border-black/10 bg-white hover:bg-black/5 transition flex items-center gap-2"
-                  title="Refresh"
-                >
-                  <span className="inline-block">⟳</span>
-                  Refresh
-                </button>
               </div>
               </div>
             </div>

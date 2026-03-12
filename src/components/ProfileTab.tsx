@@ -24,12 +24,17 @@ interface ProfileTabProps {
 interface NotificationRow {
   id: string;
   user_id: string;
+  event_id: string | null;
   title: string | null;
   body: string | null;
   url: string | null;
   created_at: string | null;
   read: boolean | null;
   type: string | null;
+}
+
+interface PreferenceRow {
+  interest_name: string | null;
 }
 
 function dedupeNotifications(rows: NotificationRow[]) {
@@ -48,6 +53,7 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
 
   const [profile, setProfile] = useState<any>(null);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
+  const [preferences, setPreferences] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCameraMenu, setShowCameraMenu] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -68,7 +74,7 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    Promise.all([loadProfile(), loadNotifications()]).finally(() => setLoading(false));
+    Promise.all([loadProfile(), loadNotifications(), loadPreferences()]).finally(() => setLoading(false));
   }, [user]);
 
   useEffect(() => {
@@ -78,6 +84,27 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const loadPreferences = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("user_preferences")
+      .select("interest_name")
+      .eq("user_id", user.id)
+      .order("interest_name");
+
+    if (error) {
+      console.error("Error loading preferences:", error.message);
+      return;
+    }
+
+    setPreferences(
+      (data ?? [])
+        .map((row) => (row as PreferenceRow).interest_name?.trim())
+        .filter((value): value is string => Boolean(value))
+    );
+  };
 
   const loadProfile = async () => {
     if (!user) return;
@@ -110,7 +137,7 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
 
     const { data, error } = await supabase
       .from("notifications")
-      .select("id, user_id, title, body, url, created_at, read, type")
+      .select("id, user_id, event_id, title, body, url, created_at, read, type")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -119,19 +146,81 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
       return;
     }
 
-    const filtered = (data ?? []).filter((notification) => SUPPORTED_NOTIFICATION_TYPES.has(notification.type ?? ""));
+    const fakeNotificationIds = (data ?? [])
+      .filter((notification) => (notification.body ?? "").trim() === "AI Career Networking Panel")
+      .map((notification) => notification.id);
+
+    if (fakeNotificationIds.length) {
+      const { error: cleanupError } = await supabase.from("notifications").delete().in("id", fakeNotificationIds);
+      if (cleanupError) {
+        console.error("Failed to clean fake notifications:", cleanupError.message);
+      }
+    }
+
+    const filtered = (data ?? []).filter((notification) => {
+      if (!SUPPORTED_NOTIFICATION_TYPES.has(notification.type ?? "")) return false;
+      if ((notification.body ?? "").trim() === "AI Career Networking Panel") return false;
+      return true;
+    });
     setNotifications(dedupeNotifications(filtered as NotificationRow[]));
   };
 
   const handleDeleteNotification = async (notificationId: string) => {
-    const previous = notifications;
-    setNotifications((current) => current.filter((notification) => notification.id !== notificationId));
+    const target = notifications.find((notification) => notification.id === notificationId);
+    if (!target || !user) return;
 
-    const { error } = await supabase.from("notifications").delete().eq("id", notificationId);
+    const previous = notifications;
+    setNotifications((current) =>
+      current.filter((notification) => {
+        const sameSignature =
+          notification.user_id === target.user_id &&
+          (notification.type ?? "") === (target.type ?? "") &&
+          (notification.title ?? "") === (target.title ?? "") &&
+          (notification.body ?? "") === (target.body ?? "") &&
+          (notification.url ?? "") === (target.url ?? "");
+
+        const sameEvent = target.event_id
+          ? notification.user_id === target.user_id &&
+            (notification.event_id ?? "") === target.event_id &&
+            (notification.type ?? "") === (target.type ?? "")
+          : false;
+
+        return !(sameSignature || sameEvent);
+      })
+    );
+
+    let query = supabase.from("notifications").delete().eq("user_id", target.user_id);
+
+    if (target.event_id) {
+      query = query.eq("event_id", target.event_id).eq("type", target.type ?? "");
+    } else {
+      query = query
+        .eq("type", target.type ?? "")
+        .eq("title", target.title ?? "")
+        .eq("body", target.body ?? "")
+        .eq("url", target.url ?? "");
+    }
+
+    const { error } = await query;
     if (error) {
       console.error("Failed to delete notification:", error.message);
       setNotifications(previous);
     }
+  };
+
+  const formatNotificationTimestamp = (value: string | null) => {
+    if (!value) return "";
+
+    return new Intl.DateTimeFormat("en-US", {
+      month: "numeric",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    })
+      .format(new Date(value))
+      .replace(" AM", "am")
+      .replace(" PM", "pm");
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,6 +384,28 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
                 Edit Preferences
               </button>
             </div>
+
+            <div className="mt-5 border-t border-black/5 pt-5">
+              <h3 className="text-sm font-bold text-black">Current preferences</h3>
+              <p className="mt-1 text-sm text-black/55">These are the interests currently shaping your feed.</p>
+
+              {preferences.length ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {preferences.map((preference) => (
+                    <span
+                      key={preference}
+                      className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"
+                    >
+                      {preference}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-3 rounded-xl border border-black/10 bg-black/[0.02] px-4 py-3 text-sm text-black/55">
+                  No preferences selected yet.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -325,9 +436,7 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
                         >
                           <p className="break-words font-bold text-black">{notification.title}</p>
                           {notification.body ? <p className="mt-1 break-words text-sm text-black/60">{notification.body}</p> : null}
-                          <p className="text-xs text-black/45 mt-2">
-                            {notification.created_at ? new Date(notification.created_at).toLocaleString() : ""}
-                          </p>
+                          <p className="mt-2 text-xs text-black/45">{formatNotificationTimestamp(notification.created_at)}</p>
                         </button>
 
                         <div className="flex items-center justify-end gap-2 sm:justify-start">
