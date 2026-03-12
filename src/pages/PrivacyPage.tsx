@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { LegalPageLayout } from "../components/LegalPageLayout";
 
 const privacySections = [
@@ -101,6 +102,10 @@ const privacySections = [
 ];
 
 export function PrivacyPage() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
+
   return (
     <LegalPageLayout title="Privacy Policy">
       {privacySections.map((section) => (

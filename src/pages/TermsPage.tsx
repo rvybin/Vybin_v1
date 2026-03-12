@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { LegalPageLayout } from "../components/LegalPageLayout";
 
 const termsSections = [
@@ -101,6 +102,10 @@ const termsSections = [
 ];
 
 export function TermsPage() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
+
   return (
     <LegalPageLayout title="Terms of Service">
       {termsSections.map((section) => (
