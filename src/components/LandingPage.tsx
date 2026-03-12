@@ -439,7 +439,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   href="https://www.instagram.com/vybin_org/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-white/75 transition hover:bg-white/10 hover:text-white"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-gradient-to-r from-[#F58529] via-[#DD2A7B] to-[#8134AF] px-6 py-4 text-white shadow-[0_0_26px_rgba(221,42,123,0.22)] transition hover:-translate-y-[1px] hover:shadow-[0_0_38px_rgba(221,42,123,0.34)]"
                 >
                   <Instagram className="h-5 w-5" />
                   Follow @vybin_org
