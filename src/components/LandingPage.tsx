@@ -354,12 +354,14 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                       ))}
                     </div>
 
-                    <button
-                      onClick={onGetStarted}
-                      className="mt-auto inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 pt-9 font-semibold text-white/90 transition hover:bg-white/10"
-                    >
-                      Get Started Free
-                    </button>
+                    <div className="mt-auto pt-9">
+                      <button
+                        onClick={onGetStarted}
+                        className="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 font-semibold text-white/90 transition hover:bg-white/10"
+                      >
+                        Get Started Free
+                      </button>
+                    </div>
                   </div>
 
                   <div className="relative flex h-full flex-col rounded-[28px] border border-[#00BFFF]/45 bg-[linear-gradient(180deg,rgba(8,24,38,0.96),rgba(14,16,30,0.98))] p-7 shadow-[0_0_55px_rgba(0,191,255,0.14)]">
@@ -384,13 +386,15 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                       ))}
                     </div>
 
-                    <button
-                      onClick={openPremiumCheckout}
-                      className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] px-5 py-3.5 pt-9 font-semibold text-white shadow-[0_0_28px_rgba(0,191,255,0.28)] transition hover:-translate-y-[1px] hover:shadow-[0_0_42px_rgba(0,191,255,0.42)]"
-                    >
-                      Upgrade to Premium
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
+                    <div className="mt-auto pt-9">
+                      <button
+                        onClick={openPremiumCheckout}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] px-5 py-3.5 font-semibold text-white shadow-[0_0_28px_rgba(0,191,255,0.28)] transition hover:-translate-y-[1px] hover:shadow-[0_0_42px_rgba(0,191,255,0.42)]"
+                      >
+                        Upgrade to Premium
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
