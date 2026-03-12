@@ -624,6 +624,7 @@ export function FeedTab() {
                   Refresh
                 </button>
               </div>
+              </div>
             </div>
           </div>
         </div>
