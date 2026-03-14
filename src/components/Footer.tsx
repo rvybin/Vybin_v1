@@ -10,7 +10,7 @@ export function Footer() {
         <div className="mb-6 flex flex-col items-center justify-center gap-3 text-sm sm:flex-row sm:gap-4">
           <div className="flex flex-wrap items-center justify-center gap-2 text-center">
             <Mail className="h-4 w-4 text-[#4C6EF5]" />
-            <span className="text-gray-300">vyasrohan07@gmail.com</span>
+            <span className="text-gray-300">vybinorg@gmail.com</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2 text-center">

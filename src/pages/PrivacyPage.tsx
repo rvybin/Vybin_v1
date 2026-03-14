@@ -6,7 +6,7 @@ const privacySections = [
     heading: "1. Who We Are",
     paragraphs: [
       "Vybin is an event discovery platform designed for university students.",
-      "Contact: vyasrohan07@gmail.com",
+      "Contact: vybinorg@gmail.com",
       "Location: Montréal, Québec, Canada",
     ],
   },
@@ -57,7 +57,7 @@ const privacySections = [
     heading: "7. Your Rights",
     paragraphs: [
       "You may request access, correction, or deletion of your information, subject to legal requirements.",
-      "To make a request, email vyasrohan07@gmail.com.",
+      "To make a request, email vybinorg@gmail.com.",
     ],
   },
   {
@@ -95,7 +95,7 @@ const privacySections = [
     heading: "13. Contact",
     paragraphs: [
       "Vybin",
-      "Email: vyasrohan07@gmail.com",
+      "Email: vybinorg@gmail.com",
       "Location: Montréal, Québec, Canada",
     ],
   },
