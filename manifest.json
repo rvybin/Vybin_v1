@@ -1,9 +1,9 @@
 {
-  "name": "vybin",
-  "short_name": "vybin",
+  "name": "Vybin",
+  "short_name": "Vybin",
   "icons": [
-    { "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512x512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/Vybin_Org.png?v=2", "sizes": "192x192", "type": "image/png" },
+    { "src": "/Vybin_Org.png?v=2", "sizes": "512x512", "type": "image/png" }
   ],
   "start_url": "/",
   "display": "standalone",
