@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { MapPin, Bookmark, CalendarPlus, Eye, CheckCircle2 } from "lucide-react";
+import { MapPin, Bookmark, CalendarPlus, Eye, CheckCircle2, Plus } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { EventModal } from "./EventModal";
+import { PostEventModal } from "./PostEventModal";
 import type { Database } from "../lib/database.types";
 import { buildEventMatchText, matchesInterest, normalizeMatchText } from "../lib/eventMatching";
 
@@ -34,7 +35,7 @@ interface Application {
 
 interface InterestRow {
   name: string;
-  icon: string; // iconName from DB (e.g., "heart", "briefcase", etc.)
+  icon: string;
 }
 
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
@@ -74,45 +75,36 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   "Leadership & Personal Growth": ["leadership", "mindset", "growth", "development", "imposter"],
 };
 
-// ✅ Decode HTML entities incl. accents (pr&eacute;senter) + numeric entities (&#233; / &#x00E9;)
 const decodeHTMLEntities = (input: string) => {
-  return (
-    input
-      // numeric entities
-      .replace(/&#(\d+);/g, (_m, n) => String.fromCharCode(Number(n)))
-      .replace(/&#x([0-9a-f]+);/gi, (_m, n) => String.fromCharCode(parseInt(n, 16)))
-      // common named entities
-      .replace(/&nbsp;/gi, " ")
-      .replace(/&bull;|&#8226;/gi, "•")
-      .replace(/&amp;/gi, "&")
-      .replace(/&quot;/gi, '"')
-      .replace(/&#39;|&apos;/gi, "'")
-      .replace(/&rsquo;|&lsquo;/gi, "'")
-      .replace(/&rdquo;|&ldquo;/gi, '"')
-      .replace(/&ndash;|&#8211;/gi, "–")
-      .replace(/&mdash;|&#8212;/gi, "—")
-      .replace(/&hellip;|&#8230;/gi, "…")
-      // common accented letters (named entities)
-      .replace(/&eacute;/gi, "é")
-      .replace(/&egrave;/gi, "è")
-      .replace(/&ecirc;/gi, "ê")
-      .replace(/&agrave;/gi, "à")
-      .replace(/&acirc;/gi, "â")
-      .replace(/&ccedil;/gi, "ç")
-      .replace(/&ocirc;/gi, "ô")
-      .replace(/&ucirc;/gi, "û")
-  );
+  return input
+    .replace(/&#(\d+);/g, (_m, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_m, n) => String.fromCharCode(parseInt(n, 16)))
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&bull;|&#8226;/gi, "•")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&rsquo;|&lsquo;/gi, "'")
+    .replace(/&rdquo;|&ldquo;/gi, '"')
+    .replace(/&ndash;|&#8211;/gi, "–")
+    .replace(/&mdash;|&#8212;/gi, "—")
+    .replace(/&hellip;|&#8230;/gi, "…")
+    .replace(/&eacute;/gi, "é")
+    .replace(/&egrave;/gi, "è")
+    .replace(/&ecirc;/gi, "ê")
+    .replace(/&agrave;/gi, "à")
+    .replace(/&acirc;/gi, "â")
+    .replace(/&ccedil;/gi, "ç")
+    .replace(/&ocirc;/gi, "ô")
+    .replace(/&ucirc;/gi, "û");
 };
 
 const stripHTML = (html?: string | null) =>
   decodeHTMLEntities(html ?? "")
-    // strip tags after decode (either order works; decode first helps with weird mixes)
     .replace(/<[^>]*>/g, " ")
-    // cleanup
     .replace(/\s+/g, " ")
     .trim();
 
-// ✅ exactly 1 sentence, no ellipsis. If too long, hard-trim without adding "…".
 function oneSentenceNoEllipsis(html: string | null, maxChars = 170) {
   const text = stripHTML(html);
   if (!text) return "";
@@ -136,7 +128,6 @@ function formatDate(iso: string) {
   });
 }
 
-// ✅ same mapping as onboarding
 function getIcon(iconName: string): string {
   const iconMap: Record<string, string> = {
     laptop: "💻",
@@ -187,8 +178,8 @@ export function FeedTab() {
   const [fadeState] = useState<"fade-in" | "fade-out">("fade-in");
 
   const [windowDays, setWindowDays] = useState<7 | 14 | 30>(14);
+  const [isPostEventOpen, setIsPostEventOpen] = useState(false);
 
-  // interest name -> iconName (from DB)
   const [interestIconMap, setInterestIconMap] = useState<Record<string, string>>({});
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -383,7 +374,6 @@ export function FeedTab() {
       if (error) throw error;
       setAppliedEvents((p) => new Set(p).add(ev.id));
     } catch (error: any) {
-      // Ignore duplicates if the row already exists in the DB.
       if (error?.code !== "23505") {
         console.error("Failed to mark application:", error);
       } else {
@@ -399,18 +389,18 @@ export function FeedTab() {
     setIsModalOpen(true);
     sessionStorage.setItem(FEED_MODAL_STORAGE_KEY, JSON.stringify(ev));
   };
+
   const closeModal = () => {
     setIsModalOpen(false);
     sessionStorage.removeItem(FEED_MODAL_STORAGE_KEY);
     setTimeout(() => setSelectedEvent(null), 220);
   };
 
-  // Buckets
   const { thisWeekEvents, nextWeekEvents, laterEvents } = useMemo(() => {
     const now = new Date();
 
     const startNextWeek = new Date(now);
-    const day = startNextWeek.getDay(); // Sun=0
+    const day = startNextWeek.getDay();
     const daysUntilMonday = (8 - day) % 7 || 7;
     startNextWeek.setDate(startNextWeek.getDate() + daysUntilMonday);
     startNextWeek.setHours(0, 0, 0, 0);
@@ -463,7 +453,6 @@ export function FeedTab() {
     );
   };
 
-  // accent + emoji per category
   const metaForCategory = (category: string) => {
     const key = category.trim().toLowerCase();
     const iconName = interestIconMap[key] || "rocket";
@@ -599,23 +588,30 @@ export function FeedTab() {
             <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
-                  McGill Events
-                </h1>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="text-sm sm:text-base text-black/60">Events matched to your interests</p>
-                  <span className="text-[11px] font-semibold px-2 py-1 rounded-full bg-red-50 text-red-600 border border-red-200">
-                    Next {windowDays} days
-                  </span>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
+                    McGill Events
+                  </h1>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <p className="text-sm sm:text-base text-black/60">Events matched to your interests</p>
+                    <span className="text-[11px] font-semibold px-2 py-1 rounded-full bg-red-50 text-red-600 border border-red-200">
+                      Next {windowDays} days
+                    </span>
+                  </div>
+                  <div className="mt-4 h-[2px] w-24 rounded-full" style={{ background: MCGILL_RED }} />
                 </div>
-                <div className="mt-4 h-[2px] w-24 rounded-full" style={{ background: MCGILL_RED }} />
-              </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <WindowPill days={7} />
-                <WindowPill days={14} />
-                <WindowPill days={30} />
-              </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <WindowPill days={7} />
+                  <WindowPill days={14} />
+                  <WindowPill days={30} />
+                  <button
+                    onClick={() => setIsPostEventOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#ED1B2F] bg-[#ED1B2F] px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Post Event
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -662,6 +658,14 @@ export function FeedTab() {
         isApplied={selectedEvent ? appliedEvents.has(selectedEvent.id) : false}
         onMarkApplied={selectedEvent ? handleMarkApplied : undefined}
         markingApplied={markingApplied}
+      />
+
+      <PostEventModal
+        isOpen={isPostEventOpen}
+        onClose={() => setIsPostEventOpen(false)}
+        onSubmitted={() => {
+          setIsPostEventOpen(false);
+        }}
       />
     </>
   );
