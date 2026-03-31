@@ -76,27 +76,29 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
 };
 
 const decodeHTMLEntities = (input: string) => {
-  return input
-    .replace(/&#(\d+);/g, (_m, n) => String.fromCharCode(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_m, n) => String.fromCharCode(parseInt(n, 16)))
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&bull;|&#8226;/gi, "•")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&rsquo;|&lsquo;/gi, "'")
-    .replace(/&rdquo;|&ldquo;/gi, '"')
-    .replace(/&ndash;|&#8211;/gi, "–")
-    .replace(/&mdash;|&#8212;/gi, "—")
-    .replace(/&hellip;|&#8230;/gi, "…")
-    .replace(/&eacute;/gi, "é")
-    .replace(/&egrave;/gi, "è")
-    .replace(/&ecirc;/gi, "ê")
-    .replace(/&agrave;/gi, "à")
-    .replace(/&acirc;/gi, "â")
-    .replace(/&ccedil;/gi, "ç")
-    .replace(/&ocirc;/gi, "ô")
-    .replace(/&ucirc;/gi, "û");
+  return (
+    input
+      .replace(/&#(\d+);/g, (_m, n) => String.fromCharCode(Number(n)))
+      .replace(/&#x([0-9a-f]+);/gi, (_m, n) => String.fromCharCode(parseInt(n, 16)))
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&bull;|&#8226;/gi, "•")
+      .replace(/&amp;/gi, "&")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;|&apos;/gi, "'")
+      .replace(/&rsquo;|&lsquo;/gi, "'")
+      .replace(/&rdquo;|&ldquo;/gi, '"')
+      .replace(/&ndash;|&#8211;/gi, "–")
+      .replace(/&mdash;|&#8212;/gi, "—")
+      .replace(/&hellip;|&#8230;/gi, "…")
+      .replace(/&eacute;/gi, "é")
+      .replace(/&egrave;/gi, "è")
+      .replace(/&ecirc;/gi, "ê")
+      .replace(/&agrave;/gi, "à")
+      .replace(/&acirc;/gi, "â")
+      .replace(/&ccedil;/gi, "ç")
+      .replace(/&ocirc;/gi, "ô")
+      .replace(/&ucirc;/gi, "û")
+  );
 };
 
 const stripHTML = (html?: string | null) =>
@@ -176,7 +178,6 @@ export function FeedTab() {
   const [markingApplied, setMarkingApplied] = useState(false);
 
   const [fadeState] = useState<"fade-in" | "fade-out">("fade-in");
-
   const [windowDays, setWindowDays] = useState<7 | 14 | 30>(14);
   const [isPostEventOpen, setIsPostEventOpen] = useState(false);
 
@@ -249,7 +250,11 @@ export function FeedTab() {
     try {
       if (!user) return;
 
-      const { data: prefs } = await supabase.from("user_preferences").select("interest_name").eq("user_id", user.id);
+      const { data: prefs } = await supabase
+        .from("user_preferences")
+        .select("interest_name")
+        .eq("user_id", user.id);
+
       const interests = (prefs ?? []).map((p: any) => (p.interest_name as string) ?? "").filter(Boolean);
 
       const now = new Date();
@@ -274,12 +279,13 @@ export function FeedTab() {
       }) as AppEvent[];
 
       const filtered = interests.length
-        ? upcoming.filter((ev) => {
-            return interests.some((interestName) => matchesInterest(interestName, ev));
-          })
+        ? upcoming.filter((ev) => interests.some((interestName) => matchesInterest(interestName, ev)))
         : upcoming;
 
-      const chrono = [...filtered].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const chrono = [...filtered].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+
       setEvents(chrono);
     } catch (e) {
       console.error(e);
@@ -315,7 +321,9 @@ export function FeedTab() {
     );
 
     if (rangeMatch) {
-      const [, startHourRaw, startMinuteRaw, startMeridiemRaw, endHourRaw, endMinuteRaw, endMeridiemRaw] = rangeMatch;
+      const [, startHourRaw, startMinuteRaw, startMeridiemRaw, endHourRaw, endMinuteRaw, endMeridiemRaw] =
+        rangeMatch;
+
       const resolvedStartMeridiem = (startMeridiemRaw ?? endMeridiemRaw ?? "").toLowerCase();
       const resolvedEndMeridiem = (endMeridiemRaw ?? startMeridiemRaw ?? "").toLowerCase();
 
@@ -357,9 +365,9 @@ export function FeedTab() {
 
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
       ev.title
-    )}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(stripHTML(ev.description))}&location=${encodeURIComponent(
-      getCalendarLocation(ev)
-    )}`;
+    )}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(
+      stripHTML(ev.description)
+    )}&location=${encodeURIComponent(getCalendarLocation(ev))}`;
 
     window.open(url, "_blank");
   };
@@ -511,7 +519,9 @@ export function FeedTab() {
             <div className="pr-0 sm:pr-12">
               <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between">
                 <div className="min-w-0">
-                  <h3 className="break-words text-[17px] font-extrabold leading-snug text-black">{ev.title}</h3>
+                  <h3 className="break-words text-[17px] font-extrabold leading-snug text-black">
+                    {ev.title}
+                  </h3>
                   {ev.organization && <p className="text-sm text-black/60 mt-1">{ev.organization}</p>}
                 </div>
 
@@ -536,7 +546,9 @@ export function FeedTab() {
             <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-black/60">
               <div className="flex flex-wrap items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                <span className="break-words font-bold text-black/75">{ev.location ?? "McGill University"}</span>
+                <span className="break-words font-bold text-black/75">
+                  {ev.location ?? "McGill University"}
+                </span>
               </div>
 
               {isApplied && (

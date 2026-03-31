@@ -3,12 +3,16 @@ import { X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import type { Database } from "../lib/database.types";
 
 interface PostEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmitted?: () => void;
 }
+
+type EventSubmissionInsert =
+  Database["public"]["Tables"]["event_submissions"]["Insert"];
 
 export function PostEventModal({
   isOpen,
@@ -84,7 +88,7 @@ export function PostEventModal({
         .map((tag) => tag.trim())
         .filter(Boolean);
 
-      const { error: insertError } = await (supabase as any).from("event_submissions").insert({
+      const row: EventSubmissionInsert = {
         title: title.trim(),
         organization: organization.trim(),
         event_type: eventType.trim() || null,
@@ -97,7 +101,11 @@ export function PostEventModal({
         image_url: imageUrl.trim() || null,
         submitted_by: user.id,
         status: "pending",
-      });
+      };
+
+      const { error: insertError } = await supabase
+        .from("event_submissions")
+        .insert(row);
 
       if (insertError) throw insertError;
 
@@ -288,7 +296,7 @@ export function PostEventModal({
               </button>
 
               <button
-                type="submit"
+                type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
                 className="w-full rounded-2xl py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-60 sm:flex-1"

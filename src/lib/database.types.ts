@@ -45,7 +45,6 @@ export type Database = {
         ]
       }
 
-      // ✅ Calendar: upload/import tracking
       calendar_imports: {
         Row: {
           id: string
@@ -97,7 +96,6 @@ export type Database = {
         ]
       }
 
-      // ✅ Calendar: actual calendar blocks/items
       calendar_items: {
         Row: {
           id: string
@@ -229,6 +227,70 @@ export type Database = {
           tags?: string[] | null
           time?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+
+      event_submissions: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          date: string
+          deadline: string | null
+          description: string | null
+          event_type: string | null
+          id: string
+          image_url: string | null
+          is_verified_org: boolean
+          link: string | null
+          location: string | null
+          organization: string
+          prize: string | null
+          status: string
+          submitted_by: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          date: string
+          deadline?: string | null
+          description?: string | null
+          event_type?: string | null
+          id?: string
+          image_url?: string | null
+          is_verified_org?: boolean
+          link?: string | null
+          location?: string | null
+          organization: string
+          prize?: string | null
+          status?: string
+          submitted_by: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          date?: string
+          deadline?: string | null
+          description?: string | null
+          event_type?: string | null
+          id?: string
+          image_url?: string | null
+          is_verified_org?: boolean
+          link?: string | null
+          location?: string | null
+          organization?: string
+          prize?: string | null
+          status?: string
+          submitted_by?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
