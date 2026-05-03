@@ -386,8 +386,8 @@ export function CalendarTab() {
                   <Crown className="h-3 w-3" /> Premium
                 </span>
               </div>
-              <p className="mt-1 max-w-md text-sm text-black/55">
-                Upload a screenshot of your McGill timetable and your weekly schedule populates instantly — course codes, times, and locations all included.
+              <p className="mt-1 text-sm text-black/55">
+                Upload your McGill timetable screenshot and your weekly schedule populates instantly.
               </p>
             </div>
 
