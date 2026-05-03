@@ -15,7 +15,17 @@ export async function parseScheduleFromStorage(storagePath: string): Promise<Par
     body: { storagePath },
   });
 
-  if (error) throw new Error(error.message ?? "Schedule parsing failed");
+  if (error) {
+    let message = error.message ?? "Schedule parsing failed";
+    try {
+      const body = await (error as any).context?.json?.();
+      if (body?.error) message = body.error;
+    } catch {
+      // keep original message
+    }
+    throw new Error(message);
+  }
+
   if (!Array.isArray(data)) throw new Error("Unexpected response from schedule parser");
 
   return data as ParsedClass[];
