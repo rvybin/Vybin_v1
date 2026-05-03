@@ -3,7 +3,7 @@ import { AlertTriangle, CalendarDays, CheckCircle2, Crown, Lock, Sparkles, Uploa
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { openPremiumCheckout } from "../lib/billing";
-import { parseScheduleFromStorage, type ParsedClass } from "../lib/scheduleOcr";
+import { parseScheduleFromStorage } from "../lib/scheduleOcr";
 
 const MCGILL_RED = "#ED1B2F";
 const LIGHT_BG = "#F6F7F9";
@@ -12,10 +12,10 @@ const ALLOWED_MIME = new Set(["image/png", "image/jpeg"]);
 const MAX_MB = 12;
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 const DAY_CODES = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
-const HOURS = Array.from({ length: 13 }, (_, index) => 8 + index);
-const MOBILE_PIXELS_PER_HOUR = 84;
-const DESKTOP_PIXELS_PER_HOUR = 56;
-const WEEKLY_RRULE_PREFIX = "FREQ=WEEKLY;INTERVAL=1;BYDAY=";
+const HOURS = Array.from({ length: 13 }, (_, i) => 8 + i);
+const PX_PER_HOUR = 68;
+const MOBILE_PX_PER_HOUR = 88;
+const RRULE_PREFIX = "FREQ=WEEKLY;INTERVAL=1;BYDAY=";
 
 type CalendarItemRow = {
   id: string;
@@ -32,56 +32,64 @@ type CalendarPlacement = CalendarItemRow & {
   dayIndex: number;
   startMinutes: number;
   endMinutes: number;
+  colOffset: number;
+  colTotal: number;
 };
 
-function formatTimeLabel(hour: number) {
+function getMonday(date: Date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function addDays(date: Date, n: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+function toMinutes(d: Date) {
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function formatHourLabel(hour: number) {
   if (hour === 12) return "12 PM";
   if (hour > 12) return `${hour - 12} PM`;
   return `${hour} AM`;
 }
 
-function getMonday(date: Date) {
-  const monday = new Date(date);
-  const day = monday.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  monday.setDate(monday.getDate() + diff);
-  monday.setHours(0, 0, 0, 0);
-  return monday;
+function formatWeekRange(start: Date) {
+  const end = addDays(start, 6);
+  return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 }
 
-function addDays(date: Date, amount: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + amount);
-  return next;
-}
-
-function formatWeekRange(weekStart: Date) {
-  const weekEnd = addDays(weekStart, 6);
-  const startText = weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const endText = weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  return `${startText} - ${endText}`;
-}
-
-function toMinutes(date: Date) {
-  return date.getHours() * 60 + date.getMinutes();
-}
-
-function buildRecurringDate(weekStart: Date, dayIndex: number, sourceIso: string) {
-  const source = new Date(sourceIso);
-  const next = addDays(weekStart, dayIndex);
-  next.setHours(source.getHours(), source.getMinutes(), 0, 0);
-  return next;
+function formatBlockTime(iso: string) {
+  const d = new Date(iso);
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const suffix = h >= 12 ? "PM" : "AM";
+  const dh = h % 12 === 0 ? 12 : h % 12;
+  return `${dh}:${String(m).padStart(2, "0")} ${suffix}`;
 }
 
 function getRRuleDay(rrule: string | null) {
   if (!rrule) return null;
-  const match = rrule.match(/BYDAY=([A-Z]{2})/);
-  if (!match) return null;
-  const dayIndex = DAY_CODES.indexOf(match[1] as (typeof DAY_CODES)[number]);
-  return dayIndex >= 0 ? dayIndex : null;
+  const m = rrule.match(/BYDAY=([A-Z]{2})/);
+  if (!m) return null;
+  const idx = DAY_CODES.indexOf(m[1] as (typeof DAY_CODES)[number]);
+  return idx >= 0 ? idx : null;
 }
 
-function buildCalendarKey(item: Pick<CalendarItemRow, "course_code" | "location" | "start_at" | "end_at" | "rrule">) {
+function buildRecurringDate(weekStart: Date, dayIndex: number, sourceIso: string) {
+  const src = new Date(sourceIso);
+  const d = addDays(weekStart, dayIndex);
+  d.setHours(src.getHours(), src.getMinutes(), 0, 0);
+  return d;
+}
+
+function buildKey(item: Pick<CalendarItemRow, "course_code" | "location" | "start_at" | "end_at" | "rrule">) {
   return [
     item.course_code ?? "",
     item.location ?? "",
@@ -91,11 +99,28 @@ function buildCalendarKey(item: Pick<CalendarItemRow, "course_code" | "location"
   ].join("|");
 }
 
-function minutesToLocalTime(value: string) {
-  const [hours, minutes] = value.split(":").map(Number);
-  const suffix = hours >= 12 ? "PM" : "AM";
-  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
-  return `${displayHour}:${String(minutes).padStart(2, "0")} ${suffix}`;
+function assignOverlapCols(items: CalendarPlacement[]): CalendarPlacement[] {
+  const sorted = [...items].sort((a, b) => a.startMinutes - b.startMinutes);
+  const groups: { items: CalendarPlacement[]; maxEnd: number }[] = [];
+
+  for (const item of sorted) {
+    let placed = false;
+    for (const g of groups) {
+      if (item.startMinutes < g.maxEnd) {
+        g.items.push(item);
+        g.maxEnd = Math.max(g.maxEnd, item.endMinutes);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) groups.push({ items: [item], maxEnd: item.endMinutes });
+  }
+
+  const result: CalendarPlacement[] = [];
+  for (const g of groups) {
+    g.items.forEach((p, i) => result.push({ ...p, colOffset: i, colTotal: g.items.length }));
+  }
+  return result;
 }
 
 export function CalendarTab() {
@@ -103,6 +128,14 @@ export function CalendarTab() {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState("");
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const [calendarItems, setCalendarItems] = useState<CalendarItemRow[]>([]);
+  const [loadingItems, setLoadingItems] = useState(true);
+  const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+  const [mobileDayIndex, setMobileDayIndex] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -114,245 +147,181 @@ export function CalendarTab() {
       .then(({ data }) => setIsPremium((data as any)?.is_premium === true));
   }, [user]);
 
-  const [uploading, setUploading] = useState(false);
-  const [parsing, setParsing] = useState(false);
-  const [savingClasses, setSavingClasses] = useState(false);
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
-  const [message, setMessage] = useState("");
-  const [parsed, setParsed] = useState<ParsedClass[]>([]);
-  const [calendarItems, setCalendarItems] = useState<CalendarItemRow[]>([]);
-  const [loadingItems, setLoadingItems] = useState(true);
-  const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
-  const [mobileDayIndex, setMobileDayIndex] = useState(0);
-
   useEffect(() => {
     if (!user) return;
-    loadCalendarItems();
+    loadItems();
   }, [user]);
 
-  const loadCalendarItems = async () => {
+  async function loadItems() {
     if (!user) return;
     setLoadingItems(true);
-
     try {
       const { data, error } = await supabase
         .from("calendar_items")
         .select("id, title, course_code, location, notes, start_at, end_at, rrule")
         .eq("user_id", user.id)
         .order("start_at", { ascending: true });
-
       if (error) throw error;
       setCalendarItems((data ?? []) as CalendarItemRow[]);
-    } catch (error) {
-      console.error("Failed to load calendar items:", error);
+    } catch {
       setCalendarItems([]);
     } finally {
       setLoadingItems(false);
     }
-  };
+  }
 
   const placements = useMemo<CalendarPlacement[]>(() => {
-    return calendarItems
+    const raw = calendarItems
       .map((item) => {
-        const recurringDayIndex = getRRuleDay(item.rrule);
-        const start = recurringDayIndex !== null ? buildRecurringDate(weekStart, recurringDayIndex, item.start_at) : new Date(item.start_at);
-        const end = recurringDayIndex !== null ? buildRecurringDate(weekStart, recurringDayIndex, item.end_at) : new Date(item.end_at);
+        const recurDay = getRRuleDay(item.rrule);
+        const start = recurDay !== null
+          ? buildRecurringDate(weekStart, recurDay, item.start_at)
+          : new Date(item.start_at);
+        const end = recurDay !== null
+          ? buildRecurringDate(weekStart, recurDay, item.end_at)
+          : new Date(item.end_at);
 
-        if (recurringDayIndex === null) {
-          const weekEnd = addDays(weekStart, 7);
-          if (start < weekStart || start >= weekEnd) return null;
+        if (recurDay === null) {
+          const we = addDays(weekStart, 7);
+          if (start < weekStart || start >= we) return null;
         }
 
-        const dayIndex = recurringDayIndex ?? ((start.getDay() + 6) % 7);
+        const dayIndex = recurDay ?? ((start.getDay() + 6) % 7);
         const startMinutes = toMinutes(start);
         const endMinutes = toMinutes(end);
         if (endMinutes <= startMinutes) return null;
 
-        return {
-          ...item,
-          dayIndex,
-          startMinutes,
-          endMinutes,
-        };
+        return { ...item, dayIndex, startMinutes, endMinutes, colOffset: 0, colTotal: 1 };
       })
       .filter(Boolean) as CalendarPlacement[];
+
+    const byDay: Record<number, CalendarPlacement[]> = {};
+    for (const p of raw) {
+      (byDay[p.dayIndex] ??= []).push(p);
+    }
+
+    return Object.values(byDay).flatMap(assignOverlapCols);
   }, [calendarItems, weekStart]);
 
   const mobilePlacements = useMemo(
-    () => placements.filter((placement) => placement.dayIndex === mobileDayIndex),
+    () => placements.filter((p) => p.dayIndex === mobileDayIndex),
     [placements, mobileDayIndex]
   );
 
-  const pickFile = () => fileRef.current?.click();
-
-  const onFileSelected = async (file: File | null) => {
-    setStatus("idle");
-    setMessage("");
-    setParsed([]);
-
-    if (!user) {
-      setStatus("error");
-      setMessage("You must be signed in to upload a schedule.");
-      return;
-    }
-    if (!file) return;
-
+  async function onFileSelected(file: File | null) {
+    if (!file || !user) return;
     if (!ALLOWED_MIME.has(file.type)) {
       setStatus("error");
-      setMessage("Only PNG or JPG images are supported right now.");
+      setMessage("Only PNG or JPG images are supported.");
       return;
     }
-
-    const sizeMB = file.size / (1024 * 1024);
-    if (sizeMB > MAX_MB) {
+    if (file.size / (1024 * 1024) > MAX_MB) {
       setStatus("error");
-      setMessage(`File too large. Max size is ${MAX_MB}MB.`);
+      setMessage(`File is too large. Max ${MAX_MB} MB.`);
       return;
     }
 
-    setUploading(true);
+    setStatus("idle");
+    setMessage("");
+    setBusy(true);
+    setBusyLabel("Uploading...");
 
-    let currentImportId: string | null = null;
+    let importId: string | null = null;
 
     try {
-      currentImportId = crypto.randomUUID();
+      importId = crypto.randomUUID();
       const safeName = (file.name || "schedule").replace(/[^\w.\-]+/g, "_").slice(0, 120);
-      const objectPath = `${user.id}/${currentImportId}/${Date.now()}_${safeName}`;
+      const objectPath = `${user.id}/${importId}/${Date.now()}_${safeName}`;
 
       await supabase.from("calendar_imports").insert({
-        id: currentImportId,
+        id: importId,
         user_id: user.id,
         status: "uploading",
         file_name: file.name,
         file_type: file.type,
         file_path: objectPath,
-        error: null,
-        parsed_json: null,
       } as any);
 
-      const { error: uploadErr } = await supabase.storage.from(BUCKET).upload(objectPath, file, {
-        contentType: file.type,
-        upsert: false,
-      });
+      const { error: uploadErr } = await supabase.storage
+        .from(BUCKET)
+        .upload(objectPath, file, { contentType: file.type, upsert: false });
       if (uploadErr) throw uploadErr;
 
-      await supabase
-        .from("calendar_imports")
-        .update({ status: "uploaded", error: null } as any)
-        .eq("id", currentImportId)
-        .eq("user_id", user.id);
+      setBusyLabel("Reading your timetable...");
 
-      setStatus("success");
-      setMessage("Uploaded. Extracting classes from your timetable...");
+      const detected = await parseScheduleFromStorage(objectPath);
 
-      setParsing(true);
-      const detectedClasses = await parseScheduleFromStorage(objectPath);
-      setParsed(detectedClasses);
-
-      await supabase
-        .from("calendar_imports")
-        .update({
-          status: detectedClasses.length ? "parsed" : "uploaded",
-          parsed_json: detectedClasses as any,
-        } as any)
-        .eq("id", currentImportId)
-        .eq("user_id", user.id);
-
-      if (!detectedClasses.length) {
+      if (!detected.length) {
         setStatus("error");
-        setMessage("We could not detect any classes. Try a sharper screenshot with the full timetable visible.");
+        setMessage("No classes detected. Try a clearer full-timetable screenshot.");
         return;
       }
 
-      setStatus("success");
-      setMessage(`Detected ${detectedClasses.length} classes. Review them below and save to your calendar.`);
-    } catch (error: any) {
-      console.error(error);
+      setBusyLabel("Saving to calendar...");
 
-      if (user && currentImportId) {
-        await supabase
-          .from("calendar_imports")
-          .update({ status: "failed", error: error?.message ?? "Upload failed" } as any)
-          .eq("id", currentImportId)
-          .eq("user_id", user.id);
-      }
+      const existingKeys = new Set(calendarItems.map(buildKey));
+      const anchor = getMonday(new Date());
 
-      setStatus("error");
-      setMessage(error?.message ?? "Upload failed. Please try again.");
-    } finally {
-      setUploading(false);
-      setParsing(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  };
-
-  const saveToCalendar = async () => {
-    if (!user || !parsed.length) return;
-
-    setSavingClasses(true);
-    setStatus("idle");
-    setMessage("");
-
-    try {
-      const existingKeys = new Set(calendarItems.map((item) => buildCalendarKey(item)));
-      const weekAnchor = getMonday(new Date());
-
-      const rows = parsed
+      const rows = detected
         .map((entry) => {
-          const dayIndex = DAY_CODES.indexOf(entry.day);
-          const startDate = addDays(weekAnchor, dayIndex);
-          const endDate = addDays(weekAnchor, dayIndex);
-
-          const [startHour, startMinute] = entry.startTime.split(":").map(Number);
-          const [endHour, endMinute] = entry.endTime.split(":").map(Number);
-
-          startDate.setHours(startHour, startMinute, 0, 0);
-          endDate.setHours(endHour, endMinute, 0, 0);
-
+          const di = DAY_CODES.indexOf(entry.day);
+          const sd = addDays(anchor, di);
+          const ed = addDays(anchor, di);
+          const [sh, sm] = entry.startTime.split(":").map(Number);
+          const [eh, em] = entry.endTime.split(":").map(Number);
+          sd.setHours(sh, sm, 0, 0);
+          ed.setHours(eh, em, 0, 0);
           return {
             user_id: user.id,
             title: entry.title,
             course_code: entry.course_code,
             location: entry.location ?? null,
             notes: entry.notes ?? null,
-            start_at: startDate.toISOString(),
-            end_at: endDate.toISOString(),
-            rrule: `${WEEKLY_RRULE_PREFIX}${entry.day}`,
+            start_at: sd.toISOString(),
+            end_at: ed.toISOString(),
+            rrule: `${RRULE_PREFIX}${entry.day}`,
           };
         })
         .filter((row) => {
-          const key = buildCalendarKey(row);
-          if (existingKeys.has(key)) return false;
-          existingKeys.add(key);
+          const k = buildKey(row);
+          if (existingKeys.has(k)) return false;
+          existingKeys.add(k);
           return true;
         });
 
-      if (!rows.length) {
-        setStatus("success");
-        setMessage("These classes are already in your calendar.");
-        return;
+      if (rows.length) {
+        const { error } = await supabase.from("calendar_items").insert(rows as any);
+        if (error) throw error;
+        await loadItems();
       }
 
-      const { error } = await supabase.from("calendar_items").insert(rows as any);
-      if (error) throw error;
-
-      await loadCalendarItems();
-      setParsed([]);
       setStatus("success");
-      setMessage(`Saved ${rows.length} weekly classes to your calendar.`);
-    } catch (error: any) {
-      console.error(error);
+      setMessage(
+        rows.length
+          ? `${rows.length} classes added to your schedule.`
+          : "Your schedule is already up to date."
+      );
+    } catch (err: any) {
+      if (importId) {
+        await supabase
+          .from("calendar_imports")
+          .update({ status: "failed", error: err?.message ?? "Failed" } as any)
+          .eq("id", importId)
+          .eq("user_id", user.id);
+      }
       setStatus("error");
-      setMessage(error?.message ?? "Failed to save classes.");
+      setMessage(err?.message ?? "Something went wrong. Please try again.");
     } finally {
-      setSavingClasses(false);
+      setBusy(false);
+      setBusyLabel("");
+      if (fileRef.current) fileRef.current.value = "";
     }
-  };
+  }
 
   if (isPremium === null) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center" style={{ background: LIGHT_BG }}>
-        <p className="text-sm text-black/50">Loading...</p>
+        <p className="text-sm text-black/40">Loading...</p>
       </div>
     );
   }
@@ -360,341 +329,326 @@ export function CalendarTab() {
   if (!isPremium) {
     return (
       <div className="flex min-h-[80vh] flex-col items-center justify-center px-6 text-center" style={{ background: LIGHT_BG }}>
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50">
           <Lock className="h-8 w-8 text-amber-500" />
         </div>
-        <div className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-          <Crown className="h-3.5 w-3.5" />
-          Premium Feature
-        </div>
-        <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-black">Class Schedule Planner</h2>
-        <p className="mt-2 max-w-sm text-sm text-black/60">
-          Upload a screenshot of your McGill timetable and we'll auto-populate your weekly schedule with course codes, times, and locations.
+        <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+          <Crown className="h-3.5 w-3.5" /> Premium Feature
+        </span>
+        <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-black">Class Schedule Planner</h2>
+        <p className="mt-2 max-w-sm text-sm text-black/55">
+          Upload a screenshot of your McGill timetable and we'll instantly populate your weekly schedule.
         </p>
         <button
           onClick={openPremiumCheckout}
           className="mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
           style={{ background: MCGILL_RED }}
         >
-          <Crown className="h-4 w-4" />
-          Upgrade to Premium
+          <Crown className="h-4 w-4" /> Upgrade to Premium
         </button>
-        <p className="mt-3 text-xs text-black/40">Vybin Premium — coming soon</p>
+        <p className="mt-3 text-xs text-black/35">Vybin Premium — coming soon</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-x-hidden pb-24" style={{ background: LIGHT_BG }}>
-      <div className="px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-6">
-        <div className="mx-auto max-w-5xl">
-          <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl" style={{ color: MCGILL_RED }}>
-                    Calendar
-                  </h1>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                    <Crown className="h-3.5 w-3.5" />
-                    Premium feature
-                  </span>
-                </div>
+    <div className="min-h-screen pb-24" style={{ background: LIGHT_BG }}>
+      <div className="mx-auto max-w-5xl px-4 pb-8 pt-4 sm:px-5 sm:pt-6">
 
-                <p className="mt-1 text-sm text-black/60 sm:text-base">
-                  Upload your McGill timetable screenshot and turn it into a clean weekly schedule.
-                </p>
-                <div className="mt-4 h-[2px] w-24 rounded-full" style={{ background: MCGILL_RED }} />
-              </div>
+        {/* Top bar */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
+                My Schedule
+              </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                <Crown className="h-3 w-3" /> Premium
+              </span>
+            </div>
+            <p className="mt-0.5 text-sm text-black/50">{formatWeekRange(weekStart)}</p>
+          </div>
 
-              <button
-                onClick={openPremiumCheckout}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-semibold text-black/75 transition hover:bg-black/5"
+          <div className="flex flex-col gap-2 sm:items-end">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg"
+              className="hidden"
+              onChange={(e) => onFileSelected(e.target.files?.[0] ?? null)}
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ background: MCGILL_RED }}
+            >
+              <Upload className="h-4 w-4" />
+              {busy ? busyLabel : "Import timetable"}
+            </button>
+
+            {status !== "idle" && (
+              <div
+                className="flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium"
+                style={{
+                  borderColor: status === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)",
+                  background: status === "success" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+                  color: status === "success" ? "rgb(21,128,61)" : "rgb(185,28,28)",
+                }}
               >
-                <Lock className="h-4 w-4" />
-                Unlock with Stripe
+                {status === "success"
+                  ? <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                  : <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />}
+                {message}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Calendar card */}
+        <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
+
+          {/* Week nav */}
+          <div className="flex items-center justify-between border-b border-black/5 px-4 py-3 sm:px-5">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" style={{ color: MCGILL_RED }} />
+              <span className="text-sm font-semibold text-black">Weekly view</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setWeekStart((w) => addDays(w, -7))}
+                className="rounded-lg border border-black/10 px-2.5 py-1 text-xs font-semibold text-black/55 transition hover:bg-black/5"
+              >
+                ‹ Prev
+              </button>
+              <button
+                onClick={() => setWeekStart(getMonday(new Date()))}
+                className="rounded-lg border border-black/10 px-2.5 py-1 text-xs font-semibold text-black/55 transition hover:bg-black/5"
+              >
+                Today
+              </button>
+              <button
+                onClick={() => setWeekStart((w) => addDays(w, 7))}
+                className="rounded-lg border border-black/10 px-2.5 py-1 text-xs font-semibold text-black/55 transition hover:bg-black/5"
+              >
+                Next ›
               </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="px-4 pb-8 sm:px-5">
-        <div className="mx-auto grid max-w-5xl gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/10 bg-black/5">
-                  <Upload className="h-5 w-5" style={{ color: MCGILL_RED }} />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-black">Import your semester schedule</p>
-                  <p className="mt-1 text-sm text-black/60">
-                    Upload a timetable screenshot in the McGill week-grid format. We extract course code, class time,
-                    and location automatically.
-                  </p>
-
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/png,image/jpeg"
-                    className="hidden"
-                    onChange={(event) => onFileSelected(event.target.files?.[0] ?? null)}
-                  />
-
-                  <button
-                    onClick={pickFile}
-                    disabled={uploading || parsing}
-                    className="mt-4 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all duration-150 hover:-translate-y-[1px] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
-                    style={{ background: MCGILL_RED }}
-                  >
-                    {uploading ? "Uploading..." : parsing ? "Extracting..." : "Upload screenshot"}
-                  </button>
-
-                  <p className="mt-3 text-xs text-black/45">Supported: PNG/JPG. Use a full timetable screenshot for the best result.</p>
-
-                  {status !== "idle" ? (
-                    <div
-                      className="mt-4 flex items-start gap-2 rounded-xl border px-4 py-3"
-                      style={{
-                        borderColor: status === "success" ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.35)",
-                        background: status === "success" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
-                      }}
+          {loadingItems ? (
+            <div className="flex h-48 items-center justify-center text-sm text-black/35">
+              Loading your schedule...
+            </div>
+          ) : !placements.length ? (
+            <div className="flex flex-col items-center justify-center gap-3 px-6 py-20 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50">
+                <Sparkles className="h-6 w-6" style={{ color: MCGILL_RED }} />
+              </div>
+              <p className="font-semibold text-black">No classes yet</p>
+              <p className="max-w-xs text-sm text-black/45">
+                Click "Import timetable" above and upload your McGill schedule screenshot — classes appear here instantly.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* ── Mobile: day tabs + single-column grid ── */}
+              <div className="md:hidden">
+                <div className="flex gap-1.5 overflow-x-auto border-b border-black/5 px-4 py-2.5">
+                  {DAY_LABELS.map((label, i) => (
+                    <button
+                      key={label}
+                      onClick={() => setMobileDayIndex(i)}
+                      className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                        mobileDayIndex === i
+                          ? "bg-[#ED1B2F] text-white"
+                          : "border border-black/10 text-black/50 hover:bg-black/5"
+                      }`}
                     >
-                      {status === "success" ? (
-                        <CheckCircle2 className="mt-0.5 h-5 w-5" style={{ color: "rgba(34,197,94,0.95)" }} />
-                      ) : (
-                        <AlertTriangle className="mt-0.5 h-5 w-5" style={{ color: "rgba(239,68,68,0.95)" }} />
-                      )}
-                      <div className="text-sm text-black/75">{message}</div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-black">Detected classes</p>
-                  <p className="text-sm text-black/55">Review before saving to your calendar.</p>
-                </div>
-                <span className="rounded-full border border-black/10 bg-black/[0.03] px-2.5 py-1 text-[11px] font-semibold text-black/55">
-                  {parsed.length} found
-                </span>
-              </div>
-
-              {parsed.length ? (
-                <div className="mt-4 space-y-3">
-                  {parsed.map((entry) => (
-                    <div key={`${entry.day}-${entry.course_code}-${entry.startTime}`} className="rounded-xl border border-black/10 bg-black/[0.02] px-4 py-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="font-semibold text-black">{entry.course_code}</div>
-                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-black/55">
-                          {entry.day}
-                        </span>
-                      </div>
-                      <div className="mt-1 text-sm text-black/60">
-                        {minutesToLocalTime(entry.startTime)} - {minutesToLocalTime(entry.endTime)}
-                      </div>
-                      <div className="mt-1 text-sm text-black/60">{entry.location || "Location not detected"}</div>
-                    </div>
+                      {label}
+                    </button>
                   ))}
-
-                  <button
-                    onClick={saveToCalendar}
-                    disabled={savingClasses}
-                    className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all duration-150 hover:-translate-y-[1px] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
-                    style={{ background: MCGILL_RED }}
-                  >
-                    {savingClasses ? "Saving..." : "Save classes to calendar"}
-                  </button>
                 </div>
-              ) : (
-                <div className="mt-4 rounded-xl border border-dashed border-black/10 bg-black/[0.02] px-4 py-6 text-center text-sm text-black/50">
-                  Upload a timetable screenshot to preview your detected classes here.
-                </div>
-              )}
-            </div>
-          </div>
 
-          <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-5 w-5" style={{ color: MCGILL_RED }} />
-                  <p className="font-semibold text-black">Weekly schedule</p>
-                </div>
-                <p className="mt-1 text-sm text-black/55">{formatWeekRange(weekStart)}</p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setWeekStart((current) => addDays(current, -7))}
-                  className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-black/65 transition hover:bg-black/5"
-                >
-                  Prev week
-                </button>
-                <button
-                  onClick={() => setWeekStart(getMonday(new Date()))}
-                  className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-black/65 transition hover:bg-black/5"
-                >
-                  This week
-                </button>
-                <button
-                  onClick={() => setWeekStart((current) => addDays(current, 7))}
-                  className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-black/65 transition hover:bg-black/5"
-                >
-                  Next week
-                </button>
-              </div>
-            </div>
-
-            {loadingItems ? (
-              <div className="mt-6 flex h-48 items-center justify-center text-black/55">Loading your calendar...</div>
-            ) : !placements.length ? (
-              <div className="mt-6 rounded-2xl border border-dashed border-black/10 bg-black/[0.02] px-5 py-10 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50">
-                  <Sparkles className="h-6 w-6" style={{ color: MCGILL_RED }} />
-                </div>
-                <p className="mt-4 font-semibold text-black">No classes scheduled yet</p>
-                <p className="mt-1 text-sm text-black/55">
-                  Upload your McGill timetable screenshot and save the detected classes to populate your weekly view.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="mt-5 md:hidden">
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {DAY_LABELS.map((label, index) => (
-                      <button
-                        key={label}
-                        onClick={() => setMobileDayIndex(index)}
-                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                          mobileDayIndex === index
-                            ? "border-[#ED1B2F] bg-[#ED1B2F] text-white"
-                            : "border-black/10 bg-white text-black/60 hover:bg-black/5"
-                        }`}
+                <div className="grid grid-cols-[44px_1fr] gap-x-2 px-3 py-3">
+                  {/* Time labels */}
+                  <div className="relative" style={{ height: HOURS.length * MOBILE_PX_PER_HOUR }}>
+                    {HOURS.map((h, i) => (
+                      <div
+                        key={h}
+                        className="absolute right-0 text-[10px] font-medium text-black/35"
+                        style={{ top: i * MOBILE_PX_PER_HOUR - 6 }}
                       >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-[56px_minmax(0,1fr)] gap-3">
-                    <div className="relative" style={{ height: `${HOURS.length * MOBILE_PIXELS_PER_HOUR}px` }}>
-                      {HOURS.map((hour, index) => (
-                        <div
-                          key={hour}
-                          className="absolute left-0 text-[11px] font-semibold text-black/45"
-                          style={{ top: `${index * MOBILE_PIXELS_PER_HOUR - 7}px` }}
-                        >
-                          {formatTimeLabel(hour)}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="relative overflow-hidden rounded-2xl border border-black/10 bg-[#F8F9FB]" style={{ height: `${HOURS.length * MOBILE_PIXELS_PER_HOUR}px` }}>
-                      {HOURS.map((hour, index) => (
-                        <div
-                          key={hour}
-                          className="absolute inset-x-0 border-t border-dashed border-black/5"
-                          style={{ top: `${index * MOBILE_PIXELS_PER_HOUR}px` }}
-                        />
-                      ))}
-
-                      {mobilePlacements.map((placement) => {
-                        const top = ((placement.startMinutes - HOURS[0] * 60) / 60) * MOBILE_PIXELS_PER_HOUR;
-                        const height = ((placement.endMinutes - placement.startMinutes) / 60) * MOBILE_PIXELS_PER_HOUR;
-
-                        return (
-                          <div
-                            key={placement.id}
-                            className="absolute left-3 right-3 rounded-2xl border border-[#ED1B2F]/15 bg-gradient-to-br from-[#ED1B2F] to-[#FF6B7B] px-3 py-3 text-white shadow-md"
-                            style={{ top, height: Math.max(height, 56) }}
-                          >
-                            <div className="text-sm font-bold">{placement.course_code ?? placement.title}</div>
-                            <div className="mt-1 text-xs text-white/90">
-                              {new Date(placement.start_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} -{" "}
-                              {new Date(placement.end_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                            </div>
-                            <div className="mt-1 text-xs text-white/90">{placement.location || "Location TBD"}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 hidden md:block">
-                  <div className="grid grid-cols-[72px_repeat(7,minmax(0,1fr))] gap-2">
-                    <div />
-                    {DAY_LABELS.map((label, index) => (
-                      <div key={label} className="rounded-xl bg-black/[0.03] px-3 py-2 text-center">
-                        <div className="text-sm font-semibold text-black">{label}</div>
-                        <div className="text-xs text-black/45">
-                          {addDays(weekStart, index).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                        </div>
+                        {formatHourLabel(h)}
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-3 grid grid-cols-[72px_repeat(7,minmax(0,1fr))] gap-2">
-                    <div className="relative" style={{ height: `${HOURS.length * DESKTOP_PIXELS_PER_HOUR}px` }}>
-                      {HOURS.map((hour, index) => (
+                  {/* Single day column */}
+                  <div
+                    className="relative overflow-hidden rounded-xl bg-black/[0.02]"
+                    style={{ height: HOURS.length * MOBILE_PX_PER_HOUR }}
+                  >
+                    {HOURS.map((h, i) => (
+                      <div
+                        key={h}
+                        className="absolute inset-x-0 border-t border-black/[0.05]"
+                        style={{ top: i * MOBILE_PX_PER_HOUR }}
+                      />
+                    ))}
+                    {mobilePlacements.map((p) => {
+                      const top = ((p.startMinutes - HOURS[0] * 60) / 60) * MOBILE_PX_PER_HOUR;
+                      const height = Math.max(
+                        ((p.endMinutes - p.startMinutes) / 60) * MOBILE_PX_PER_HOUR,
+                        48
+                      );
+                      const pct = 100 / p.colTotal;
+                      return (
                         <div
-                          key={hour}
-                          className="absolute left-0 text-xs font-semibold text-black/45"
-                          style={{ top: `${index * DESKTOP_PIXELS_PER_HOUR - 7}px` }}
+                          key={p.id}
+                          className="absolute overflow-hidden rounded-xl bg-gradient-to-b from-[#ED1B2F] to-[#C01020] px-2.5 py-2 shadow-md"
+                          style={{
+                            top: top + 2,
+                            height: height - 4,
+                            left: `${p.colOffset * pct + 1}%`,
+                            width: `${pct - 2}%`,
+                          }}
                         >
-                          {formatTimeLabel(hour)}
+                          <p className="truncate text-[12px] font-bold leading-tight text-white">
+                            {p.course_code ?? p.title}
+                          </p>
+                          <p className="mt-0.5 truncate text-[10px] leading-tight text-white/75">
+                            {formatBlockTime(p.start_at)} – {formatBlockTime(p.end_at)}
+                          </p>
+                          {p.location && (
+                            <p className="mt-0.5 truncate text-[10px] leading-tight text-white/60">
+                              {p.location}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Desktop: full 7-day grid ── */}
+              <div className="hidden overflow-x-auto md:block">
+                <div className="min-w-[640px] px-4 pb-4 pt-3 sm:px-5">
+                  {/* Day headers */}
+                  <div
+                    className="grid gap-1.5"
+                    style={{ gridTemplateColumns: "52px repeat(7, minmax(0, 1fr))" }}
+                  >
+                    <div />
+                    {DAY_LABELS.map((label, i) => {
+                      const isToday =
+                        addDays(weekStart, i).toDateString() === new Date().toDateString();
+                      return (
+                        <div
+                          key={label}
+                          className={`rounded-xl px-2 py-2 text-center ${
+                            isToday ? "bg-[#ED1B2F]/8" : "bg-black/[0.025]"
+                          }`}
+                        >
+                          <p
+                            className={`text-[11px] font-bold ${
+                              isToday ? "text-[#ED1B2F]" : "text-black/60"
+                            }`}
+                          >
+                            {label}
+                          </p>
+                          <p className={`text-[10px] ${isToday ? "text-[#ED1B2F]/70" : "text-black/35"}`}>
+                            {addDays(weekStart, i).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Grid body */}
+                  <div
+                    className="mt-1.5 grid gap-1.5"
+                    style={{ gridTemplateColumns: "52px repeat(7, minmax(0, 1fr))" }}
+                  >
+                    {/* Hour labels */}
+                    <div className="relative" style={{ height: HOURS.length * PX_PER_HOUR }}>
+                      {HOURS.map((h, i) => (
+                        <div
+                          key={h}
+                          className="absolute right-1 whitespace-nowrap text-[9px] font-medium text-black/30"
+                          style={{ top: i * PX_PER_HOUR - 5 }}
+                        >
+                          {formatHourLabel(h)}
                         </div>
                       ))}
                     </div>
 
-                    {DAY_LABELS.map((label, columnIndex) => (
-                      <div
-                        key={label}
-                        className="relative overflow-hidden rounded-2xl border border-black/10 bg-[#F8F9FB]"
-                        style={{ height: `${HOURS.length * DESKTOP_PIXELS_PER_HOUR}px` }}
-                      >
-                        {HOURS.map((hour, index) => (
-                          <div
-                            key={hour}
-                            className="absolute inset-x-0 border-t border-dashed border-black/5"
-                            style={{ top: `${index * DESKTOP_PIXELS_PER_HOUR}px` }}
-                          />
-                        ))}
+                    {/* Day columns */}
+                    {DAY_LABELS.map((label, colIdx) => {
+                      const dayPlacements = placements.filter((p) => p.dayIndex === colIdx);
+                      const isToday =
+                        addDays(weekStart, colIdx).toDateString() === new Date().toDateString();
+                      return (
+                        <div
+                          key={label}
+                          className={`relative overflow-hidden rounded-xl border ${
+                            isToday ? "border-[#ED1B2F]/20 bg-[#ED1B2F]/[0.02]" : "border-black/[0.06] bg-black/[0.015]"
+                          }`}
+                          style={{ height: HOURS.length * PX_PER_HOUR }}
+                        >
+                          {/* Hour lines */}
+                          {HOURS.map((h, i) => (
+                            <div
+                              key={h}
+                              className="absolute inset-x-0 border-t border-black/[0.05]"
+                              style={{ top: i * PX_PER_HOUR }}
+                            />
+                          ))}
 
-                        {placements
-                          .filter((placement) => placement.dayIndex === columnIndex)
-                          .map((placement) => {
-                            const top = ((placement.startMinutes - HOURS[0] * 60) / 60) * DESKTOP_PIXELS_PER_HOUR;
-                            const height = ((placement.endMinutes - placement.startMinutes) / 60) * DESKTOP_PIXELS_PER_HOUR;
-
+                          {/* Class blocks */}
+                          {dayPlacements.map((p) => {
+                            const top = ((p.startMinutes - HOURS[0] * 60) / 60) * PX_PER_HOUR;
+                            const height = Math.max(
+                              ((p.endMinutes - p.startMinutes) / 60) * PX_PER_HOUR,
+                              32
+                            );
+                            const pct = 100 / p.colTotal;
                             return (
                               <div
-                                key={placement.id}
-                                className="absolute left-2 right-2 rounded-2xl border border-[#ED1B2F]/15 bg-gradient-to-br from-[#ED1B2F] to-[#FF6B7B] px-3 py-2.5 text-white shadow-sm"
-                                style={{ top, height: Math.max(height, 54) }}
+                                key={p.id}
+                                title={`${p.course_code ?? p.title}${p.location ? ` · ${p.location}` : ""}`}
+                                className="absolute overflow-hidden rounded-lg bg-gradient-to-b from-[#ED1B2F] to-[#C01020] shadow-sm"
+                                style={{
+                                  top: top + 2,
+                                  height: height - 4,
+                                  left: `${p.colOffset * pct + 2}%`,
+                                  width: `${pct - 4}%`,
+                                  padding: "4px 6px",
+                                }}
                               >
-                                <div className="text-sm font-bold leading-tight">{placement.course_code ?? placement.title}</div>
-                                <div className="mt-1 text-[11px] text-white/90">
-                                  {new Date(placement.start_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} -{" "}
-                                  {new Date(placement.end_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                                </div>
-                                <div className="mt-1 text-[11px] text-white/90">{placement.location || "Location TBD"}</div>
+                                <p className="truncate text-[10px] font-bold leading-tight text-white">
+                                  {p.course_code ?? p.title}
+                                </p>
+                                {height > 38 && (
+                                  <p className="mt-px truncate text-[8.5px] leading-tight text-white/70">
+                                    {formatBlockTime(p.start_at)}
+                                  </p>
+                                )}
                               </div>
                             );
                           })}
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
