@@ -9,6 +9,7 @@ import { FeedTab } from "./components/FeedTab";
 import { ApplicationsTab } from "./components/ApplicationsTab";
 import { ProfileTab } from "./components/ProfileTab";
 import { SavedTab } from "./components/SavedTab";
+import { CalendarTab } from "./components/CalendarTab";
 import { supabase } from "./lib/supabase";
 import { CursorGlow } from "./components/CursorGlow";
 import { PrivacyPage } from "./pages/PrivacyPage";
@@ -86,6 +87,7 @@ function AppContent() {
   const tabLabelMap: Record<Tab, string> = {
     feed: "Feed",
     applications: "Applications",
+    calendar: "Schedule",
     saved: "Saved",
     profile: "Profile",
   };
@@ -148,6 +150,7 @@ function AppContent() {
               <div className="flex items-center gap-2">
                 {tabBtn("feed", "Feed")}
                 {tabBtn("applications", "Applications")}
+                {tabBtn("calendar", "Schedule")}
                 {tabBtn("saved", "Saved")}
                 {tabBtn("profile", "Profile")}
               </div>
@@ -215,6 +218,7 @@ function AppContent() {
       <div className="min-h-screen overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-16 md:pb-0 md:pt-24">
         {activeTab === "feed" && <FeedTab />}
         {activeTab === "applications" && <ApplicationsTab />}
+        {activeTab === "calendar" && <CalendarTab />}
         {activeTab === "saved" && <SavedTab />}
         {activeTab === "profile" && <ProfileTab onEditPreferences={handleEditPreferences} />}
       </div>

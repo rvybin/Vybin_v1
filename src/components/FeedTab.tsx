@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { MapPin, Bookmark, CalendarPlus, Eye, CheckCircle2, Plus } from "lucide-react";
+import { MapPin, Bookmark, CalendarPlus, Eye, CheckCircle2 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { EventModal } from "./EventModal";
-import { PostEventModal } from "./PostEventModal";
 import type { Database } from "../lib/database.types";
 import { buildEventMatchText, matchesInterest, normalizeMatchText } from "../lib/eventMatching";
 
@@ -179,9 +178,7 @@ export function FeedTab() {
 
   const [fadeState] = useState<"fade-in" | "fade-out">("fade-in");
   const [windowDays, setWindowDays] = useState<7 | 14 | 30>(14);
-  const [isPostEventOpen, setIsPostEventOpen] = useState(false);
-
-  const [interestIconMap, setInterestIconMap] = useState<Record<string, string>>({});
+const [interestIconMap, setInterestIconMap] = useState<Record<string, string>>({});
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const FEED_MODAL_STORAGE_KEY = "vybin_feed_selected_event";
@@ -616,13 +613,7 @@ export function FeedTab() {
                   <WindowPill days={7} />
                   <WindowPill days={14} />
                   <WindowPill days={30} />
-                  <button
-                    onClick={() => setIsPostEventOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#ED1B2F] bg-[#ED1B2F] px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Post Event
-                  </button>
+
                 </div>
               </div>
             </div>
@@ -672,13 +663,7 @@ export function FeedTab() {
         markingApplied={markingApplied}
       />
 
-      <PostEventModal
-        isOpen={isPostEventOpen}
-        onClose={() => setIsPostEventOpen(false)}
-        onSubmitted={() => {
-          setIsPostEventOpen(false);
-        }}
-      />
+
     </>
   );
 }

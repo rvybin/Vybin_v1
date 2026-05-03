@@ -102,6 +102,18 @@ export function CalendarTab() {
   const { user } = useAuth();
   const fileRef = useRef<HTMLInputElement | null>(null);
 
+  const [isPremium, setIsPremium] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("is_premium")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setIsPremium((data as any)?.is_premium === true));
+  }, [user]);
+
   const [uploading, setUploading] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [savingClasses, setSavingClasses] = useState(false);
@@ -336,6 +348,41 @@ export function CalendarTab() {
       setSavingClasses(false);
     }
   };
+
+  if (isPremium === null) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center" style={{ background: LIGHT_BG }}>
+        <p className="text-sm text-black/50">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!isPremium) {
+    return (
+      <div className="flex min-h-[80vh] flex-col items-center justify-center px-6 text-center" style={{ background: LIGHT_BG }}>
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200">
+          <Lock className="h-8 w-8 text-amber-500" />
+        </div>
+        <div className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+          <Crown className="h-3.5 w-3.5" />
+          Premium Feature
+        </div>
+        <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-black">Class Schedule Planner</h2>
+        <p className="mt-2 max-w-sm text-sm text-black/60">
+          Upload a screenshot of your McGill timetable and we'll auto-populate your weekly schedule with course codes, times, and locations.
+        </p>
+        <button
+          onClick={openPremiumCheckout}
+          className="mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+          style={{ background: MCGILL_RED }}
+        >
+          <Crown className="h-4 w-4" />
+          Upgrade to Premium
+        </button>
+        <p className="mt-3 text-xs text-black/40">Vybin Premium — coming soon</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-x-hidden pb-24" style={{ background: LIGHT_BG }}>
