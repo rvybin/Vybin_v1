@@ -3,7 +3,7 @@ import { AlertTriangle, CalendarDays, CheckCircle2, Crown, Lock, Sparkles, Uploa
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { openPremiumCheckout } from "../lib/billing";
-import { parseScheduleFromImage, type ParsedClass } from "../lib/scheduleOcr";
+import { parseScheduleFromStorage, type ParsedClass } from "../lib/scheduleOcr";
 
 const MCGILL_RED = "#ED1B2F";
 const LIGHT_BG = "#F6F7F9";
@@ -246,7 +246,7 @@ export function CalendarTab() {
       setMessage("Uploaded. Extracting classes from your timetable...");
 
       setParsing(true);
-      const detectedClasses = await parseScheduleFromImage(file);
+      const detectedClasses = await parseScheduleFromStorage(objectPath);
       setParsed(detectedClasses);
 
       await supabase
