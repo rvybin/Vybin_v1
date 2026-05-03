@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CalendarDays, CheckCircle2, Crown, Lock, Sparkles, Upload } from "lucide-react";
+import { AlertTriangle, CalendarDays, CheckCircle2, Crown, Lock, Sparkles, Trash2, Upload } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { openPremiumCheckout } from "../lib/billing";
@@ -208,6 +208,25 @@ export function CalendarTab() {
     [placements, mobileDayIndex]
   );
 
+  async function clearSchedule() {
+    if (!user) return;
+    if (!window.confirm("This will delete all classes from your calendar. Are you sure?")) return;
+    setBusy(true);
+    setBusyLabel("Clearing...");
+    try {
+      await supabase.from("calendar_items").delete().eq("user_id", user.id);
+      await loadItems();
+      setStatus("success");
+      setMessage("Schedule cleared. Upload a new timetable to start fresh.");
+    } catch (err: any) {
+      setStatus("error");
+      setMessage(err?.message ?? "Failed to clear schedule.");
+    } finally {
+      setBusy(false);
+      setBusyLabel("");
+    }
+  }
+
   async function onFileSelected(file: File | null) {
     if (!file || !user) return;
     if (!ALLOWED_MIME.has(file.type)) {
@@ -355,53 +374,68 @@ export function CalendarTab() {
     <div className="min-h-screen pb-24" style={{ background: LIGHT_BG }}>
       <div className="mx-auto max-w-5xl px-4 pb-8 pt-4 sm:px-5 sm:pt-6">
 
-        {/* Top bar */}
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
-                My Schedule
-              </h1>
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                <Crown className="h-3 w-3" /> Premium
-              </span>
-            </div>
-            <p className="mt-0.5 text-sm text-black/50">{formatWeekRange(weekStart)}</p>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:items-end">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/png,image/jpeg"
-              className="hidden"
-              onChange={(e) => onFileSelected(e.target.files?.[0] ?? null)}
-            />
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={busy}
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              style={{ background: MCGILL_RED }}
-            >
-              <Upload className="h-4 w-4" />
-              {busy ? busyLabel : "Import timetable"}
-            </button>
-
-            {status !== "idle" && (
-              <div
-                className="flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium"
-                style={{
-                  borderColor: status === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)",
-                  background: status === "success" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
-                  color: status === "success" ? "rgb(21,128,61)" : "rgb(185,28,28)",
-                }}
-              >
-                {status === "success"
-                  ? <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
-                  : <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />}
-                {message}
+        {/* Description card */}
+        <div className="mb-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
+                  My Schedule
+                </h1>
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                  <Crown className="h-3 w-3" /> Premium
+                </span>
               </div>
-            )}
+              <p className="mt-1 max-w-md text-sm text-black/55">
+                Upload a screenshot of your McGill timetable and your weekly schedule populates instantly — course codes, times, and locations all included.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg"
+                className="hidden"
+                onChange={(e) => onFileSelected(e.target.files?.[0] ?? null)}
+              />
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={busy}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ background: MCGILL_RED }}
+              >
+                <Upload className="h-4 w-4" />
+                {busy ? busyLabel : "Import timetable"}
+              </button>
+
+              {calendarItems.length > 0 && (
+                <button
+                  onClick={clearSchedule}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-black/50 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Clear schedule
+                </button>
+              )}
+
+              {status !== "idle" && (
+                <div
+                  className="flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium"
+                  style={{
+                    borderColor: status === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)",
+                    background: status === "success" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+                    color: status === "success" ? "rgb(21,128,61)" : "rgb(185,28,28)",
+                  }}
+                >
+                  {status === "success"
+                    ? <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                    : <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />}
+                  {message}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -412,7 +446,10 @@ export function CalendarTab() {
           <div className="flex items-center justify-between border-b border-black/5 px-4 py-3 sm:px-5">
             <div className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4" style={{ color: MCGILL_RED }} />
-              <span className="text-sm font-semibold text-black">Weekly view</span>
+              <div>
+                <span className="text-sm font-semibold text-black">Weekly view</span>
+                <p className="text-[11px] text-black/40">{formatWeekRange(weekStart)}</p>
+              </div>
             </div>
             <div className="flex items-center gap-1">
               <button
@@ -611,11 +648,9 @@ export function CalendarTab() {
 
                           {/* Class blocks */}
                           {dayPlacements.map((p) => {
+                            const rawH = ((p.endMinutes - p.startMinutes) / 60) * PX_PER_HOUR;
                             const top = ((p.startMinutes - HOURS[0] * 60) / 60) * PX_PER_HOUR;
-                            const height = Math.max(
-                              ((p.endMinutes - p.startMinutes) / 60) * PX_PER_HOUR,
-                              32
-                            );
+                            const blockH = Math.max(rawH, 32) - 4;
                             const pct = 100 / p.colTotal;
                             return (
                               <div
@@ -624,7 +659,7 @@ export function CalendarTab() {
                                 className="absolute overflow-hidden rounded-lg bg-gradient-to-b from-[#ED1B2F] to-[#C01020] shadow-sm"
                                 style={{
                                   top: top + 2,
-                                  height: height - 4,
+                                  height: blockH,
                                   left: `${p.colOffset * pct + 2}%`,
                                   width: `${pct - 4}%`,
                                   padding: "4px 6px",
@@ -633,9 +668,14 @@ export function CalendarTab() {
                                 <p className="truncate text-[10px] font-bold leading-tight text-white">
                                   {p.course_code ?? p.title}
                                 </p>
-                                {height > 38 && (
-                                  <p className="mt-px truncate text-[8.5px] leading-tight text-white/70">
-                                    {formatBlockTime(p.start_at)}
+                                {rawH > 36 && (
+                                  <p className="mt-px truncate text-[8.5px] leading-tight text-white/75">
+                                    {formatBlockTime(p.start_at)} – {formatBlockTime(p.end_at)}
+                                  </p>
+                                )}
+                                {rawH > 54 && p.location && (
+                                  <p className="mt-px truncate text-[8px] leading-tight text-white/60">
+                                    {p.location}
                                   </p>
                                 )}
                               </div>
