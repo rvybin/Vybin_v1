@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { openPremiumCheckout } from "../lib/billing";
 
 const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
 const MCGILL_RED = "#ED1B2F";
@@ -111,7 +112,7 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("display_name, avatar_url, banner_url")
+      .select("display_name, avatar_url, banner_url, is_premium")
       .eq("id", user.id)
       .single();
 
@@ -295,6 +296,38 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
             </h1>
             <p className="text-sm sm:text-base text-black/60 mt-1">Your account & notifications</p>
             <div className="mt-4 h-[2px] w-24 rounded-full" style={{ background: MCGILL_RED }} />
+          </div>
+
+          {/* Premium card */}
+          <div className="mt-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
+            {profile?.is_premium ? (
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-700">
+                      ✦ Vybin Premium
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-black/50">You have access to all premium features.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-semibold text-black">Upgrade to Premium</p>
+                  <p className="mt-0.5 text-sm text-black/50">
+                    Unlock the class schedule planner and AI assistant — $10/month.
+                  </p>
+                </div>
+                <button
+                  onClick={openPremiumCheckout}
+                  className="flex-shrink-0 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                  style={{ background: MCGILL_RED }}
+                >
+                  Upgrade — $10/mo
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="mt-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
