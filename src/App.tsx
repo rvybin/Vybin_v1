@@ -25,6 +25,12 @@ function AppContent() {
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("feed");
+  const [mountedTabs, setMountedTabs] = useState<Set<Tab>>(new Set(["feed"]));
+
+  const handleTabChange = (tab: Tab) => {
+    setMountedTabs((prev) => new Set([...prev, tab]));
+    setActiveTab(tab);
+  };
   const [navAvatarUrl, setNavAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -119,7 +125,7 @@ function AppContent() {
       const active = activeTab === tab;
       return (
         <button
-          onClick={() => setActiveTab(tab)}
+          onClick={() => handleTabChange(tab)}
           className={[
             "px-4 py-2 rounded-xl text-sm font-semibold transition -translate-y-[1px]",
             active ? "text-[#333333] bg-white" : "text-[#333333]/80 hover:text-white hover:bg-white/60",
@@ -142,7 +148,7 @@ function AppContent() {
               style={{ background: "rgba(237,27,47,0.75)" }}
             >
               {/* Logo */}
-              <button onClick={() => setActiveTab("feed")} className="flex items-center gap-2 select-none">
+              <button onClick={() => handleTabChange("feed")} className="flex items-center gap-2 select-none">
                 <span className="text-2xl font-extrabold tracking-tight text-white">
                   vyb<span className="opacity-90">in</span>
                 </span>
@@ -185,7 +191,7 @@ function AppContent() {
   const MobileHeader = () => (
     <div className="fixed left-0 right-0 top-0 z-[60] border-b border-black/10 bg-white/95 backdrop-blur md:hidden">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-        <button onClick={() => setActiveTab("feed")} className="flex items-center gap-2 select-none">
+        <button onClick={() => handleTabChange("feed")} className="flex items-center gap-2 select-none">
           <span className="text-xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
             vyb<span className="opacity-90">in</span>
           </span>
@@ -219,15 +225,15 @@ function AppContent() {
       {showNav && <MobileHeader />}
 
       <div className="min-h-screen overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-16 md:pb-0 md:pt-24">
-        {activeTab === "feed" && <FeedTab />}
-        {activeTab === "applications" && <ApplicationsTab />}
-        {activeTab === "calendar" && <CalendarTab />}
-        {activeTab === "assistant" && <AssistantTab />}
-        {activeTab === "saved" && <SavedTab />}
-        {activeTab === "profile" && <ProfileTab onEditPreferences={handleEditPreferences} />}
+        {mountedTabs.has("feed") && <div className={activeTab === "feed" ? "" : "hidden"}><FeedTab /></div>}
+        {mountedTabs.has("applications") && <div className={activeTab === "applications" ? "" : "hidden"}><ApplicationsTab /></div>}
+        {mountedTabs.has("calendar") && <div className={activeTab === "calendar" ? "" : "hidden"}><CalendarTab /></div>}
+        {mountedTabs.has("assistant") && <div className={activeTab === "assistant" ? "" : "hidden"}><AssistantTab /></div>}
+        {mountedTabs.has("saved") && <div className={activeTab === "saved" ? "" : "hidden"}><SavedTab /></div>}
+        {mountedTabs.has("profile") && <div className={activeTab === "profile" ? "" : "hidden"}><ProfileTab onEditPreferences={handleEditPreferences} /></div>}
       </div>
 
-      {showNav && <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />}
+      {showNav && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />}
     </div>
   );
 }
