@@ -365,7 +365,7 @@ export function CalendarTab() {
         >
           <Crown className="h-4 w-4" /> Upgrade to Premium
         </button>
-        <p className="mt-3 text-xs text-black/35">Vybin Premium — coming soon</p>
+        <p className="mt-3 text-xs text-black/35">Vybin Premium — $10/month</p>
       </div>
     );
   }
