@@ -1,13 +1,12 @@
-const premiumCheckoutUrl = (import.meta.env.VITE_STRIPE_PREMIUM_LINK ?? "").trim();
+import { supabase } from "./supabase";
 
-export function hasPremiumCheckout() {
-  return premiumCheckoutUrl.length > 0;
-}
+export async function openPremiumCheckout() {
+  const { data, error } = await supabase.functions.invoke("create-checkout");
 
-export function openPremiumCheckout() {
-  window.alert("Vybin Premium is coming soon.");
-}
+  if (error || !data?.url) {
+    window.alert("Could not start checkout. Please try again.");
+    return;
+  }
 
-export function getPremiumCheckoutUrl() {
-  return premiumCheckoutUrl;
+  window.location.href = data.url;
 }
