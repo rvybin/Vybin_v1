@@ -1,6 +1,6 @@
-import { Home, FileText, User, Bookmark, CalendarDays } from "lucide-react";
+import { Home, FileText, User, Bookmark, CalendarDays, Sparkles } from "lucide-react";
 
-export type Tab = "feed" | "applications" | "calendar" | "saved" | "profile";
+export type Tab = "feed" | "applications" | "calendar" | "assistant" | "saved" | "profile";
 
 interface BottomNavProps {
   activeTab: Tab;
@@ -47,6 +47,13 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
           <CalendarDays className="h-5 w-5 sm:h-6 sm:w-6" style={iconStyle("calendar")} />
           <span className="truncate text-[10px] font-semibold sm:text-[11px]" style={textStyle("calendar")}>
             Schedule
+          </span>
+        </button>
+
+        <button onClick={() => onTabChange("assistant")} className={tabClass("assistant")}>
+          <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" style={iconStyle("assistant")} />
+          <span className="truncate text-[10px] font-semibold sm:text-[11px]" style={textStyle("assistant")}>
+            AI
           </span>
         </button>
 

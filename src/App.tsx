@@ -10,6 +10,7 @@ import { ApplicationsTab } from "./components/ApplicationsTab";
 import { ProfileTab } from "./components/ProfileTab";
 import { SavedTab } from "./components/SavedTab";
 import { CalendarTab } from "./components/CalendarTab";
+import { AssistantTab } from "./components/AssistantTab";
 import { supabase } from "./lib/supabase";
 import { CursorGlow } from "./components/CursorGlow";
 import { PrivacyPage } from "./pages/PrivacyPage";
@@ -88,6 +89,7 @@ function AppContent() {
     feed: "Feed",
     applications: "Applications",
     calendar: "Schedule",
+    assistant: "AI Assistant",
     saved: "Saved",
     profile: "Profile",
   };
@@ -151,6 +153,7 @@ function AppContent() {
                 {tabBtn("feed", "Feed")}
                 {tabBtn("applications", "Applications")}
                 {tabBtn("calendar", "Schedule")}
+                {tabBtn("assistant", "AI")}
                 {tabBtn("saved", "Saved")}
                 {tabBtn("profile", "Profile")}
               </div>
@@ -219,6 +222,7 @@ function AppContent() {
         {activeTab === "feed" && <FeedTab />}
         {activeTab === "applications" && <ApplicationsTab />}
         {activeTab === "calendar" && <CalendarTab />}
+        {activeTab === "assistant" && <AssistantTab />}
         {activeTab === "saved" && <SavedTab />}
         {activeTab === "profile" && <ProfileTab onEditPreferences={handleEditPreferences} />}
       </div>
