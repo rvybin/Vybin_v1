@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, ChevronDown, Instagram, X } from "lucide-react";
-import { openPremiumCheckout } from "../lib/billing";
 import { Footer } from "./Footer";
 
 interface LandingPageProps {
@@ -388,10 +387,10 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
                     <div className="mt-auto pt-9">
                       <button
-                        onClick={openPremiumCheckout}
+                        onClick={onGetStarted}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] px-5 py-3.5 font-semibold text-white shadow-[0_0_28px_rgba(0,191,255,0.28)] transition hover:-translate-y-[1px] hover:shadow-[0_0_42px_rgba(0,191,255,0.42)]"
                       >
-                        Upgrade to Premium
+                        Get Started
                         <ArrowRight className="h-4 w-4" />
                       </button>
                     </div>
