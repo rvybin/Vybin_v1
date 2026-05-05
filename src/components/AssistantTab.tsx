@@ -90,9 +90,22 @@ export function AssistantTab() {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = sessionStorage.getItem("vybin_chat");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("vybin_chat", JSON.stringify(messages));
+    } catch {}
+  }, [messages]);
 
   useEffect(() => {
     if (!user) return;
@@ -209,7 +222,7 @@ export function AssistantTab() {
 
           {messages.length > 0 && (
             <button
-              onClick={() => setMessages([])}
+              onClick={() => { setMessages([]); sessionStorage.removeItem("vybin_chat"); }}
               className="flex items-center gap-1.5 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-semibold text-black/50 transition hover:bg-black/5"
             >
               <RotateCcw className="h-3 w-3" />
