@@ -286,222 +286,194 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
 
   const displayName = profile?.display_name || user?.email?.split("@")[0] || "User";
 
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const visibleNotifications = notifications.slice(0, 20);
+
+  const handleClearAllNotifications = async () => {
+    if (!user || !notifications.length) return;
+    const ids = notifications.map((n) => n.id);
+    setNotifications([]);
+    await supabase.from("notifications").delete().in("id", ids);
+  };
+
   return (
     <div className="flex-1 overflow-x-hidden overflow-y-auto pb-24" style={{ background: LIGHT_BG }}>
-      <div className="px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
-              Profile
-            </h1>
-            <p className="text-sm sm:text-base text-black/60 mt-1">Your account & notifications</p>
-            <div className="mt-4 h-[2px] w-24 rounded-full" style={{ background: MCGILL_RED }} />
+      <div className="mx-auto max-w-2xl space-y-3 px-4 py-4 sm:px-5 sm:py-6">
+
+        {/* Profile card */}
+        <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-shrink-0" ref={cameraRef}>
+              <img
+                src={avatarSrc}
+                alt="Profile"
+                className="h-16 w-16 rounded-full border border-black/10 object-cover shadow-sm"
+              />
+              {uploadSuccess && (
+                <div className="absolute -bottom-1 -right-1 rounded-full border border-black/10 bg-white p-0.5 shadow-sm">
+                  <CheckCircle2 className="h-4 w-4" style={{ color: "#10B981" }} />
+                </div>
+              )}
+              <button
+                onClick={() => setShowCameraMenu((p) => !p)}
+                disabled={uploading}
+                className="absolute -bottom-1 -right-1 rounded-full border border-black/10 bg-white p-1.5 transition hover:bg-black/5 disabled:opacity-50"
+                title="Change photo"
+              >
+                <Camera className="h-3 w-3" style={{ color: "rgba(0,0,0,0.6)" }} />
+              </button>
+
+              {showCameraMenu && (
+                <div className="absolute left-0 top-[72px] z-50 w-48 overflow-hidden rounded-xl border border-black/10 bg-white shadow-lg text-[13px]">
+                  <button onClick={() => fileInputRef.current?.click()} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-black/80 hover:bg-black/5 transition">
+                    <Upload className="h-4 w-4" style={{ color: MCGILL_RED }} /> Upload photo
+                  </button>
+                  <button onClick={() => { setShowAvatarModal(true); setShowCameraMenu(false); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-black/80 hover:bg-black/5 transition">
+                    <Eye className="h-4 w-4" style={{ color: MCGILL_RED }} /> View photo
+                  </button>
+                  <button onClick={handleRemoveAvatar} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-red-600 hover:bg-red-50 transition">
+                    <Trash2 className="h-4 w-4" /> Remove photo
+                  </button>
+                </div>
+              )}
+
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-lg font-extrabold text-black">{displayName}</h2>
+              <p className="truncate text-sm text-black/50">{user?.email ?? "-"}</p>
+            </div>
+
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="flex-shrink-0 rounded-xl border border-black/10 px-3 py-2 text-xs font-semibold text-black/55 transition hover:bg-black/5"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+
+        {/* Subscription card */}
+        <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
+          {profile?.is_premium ? (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                  ✦ Vybin Premium
+                </span>
+                <p className="mt-1 text-sm text-black/50">You have access to all premium features.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold text-black">Upgrade to Premium</p>
+                <p className="mt-0.5 text-sm text-black/50">Unlock the AI assistant and class schedule planner.</p>
+              </div>
+              <button
+                onClick={openPremiumCheckout}
+                className="flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                style={{ background: MCGILL_RED }}
+              >
+                Upgrade — $10/mo
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Interests card */}
+        <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold text-black">My Interests</p>
+              <p className="mt-0.5 text-sm text-black/50">Shapes your event feed.</p>
+            </div>
+            <button
+              onClick={onEditPreferences}
+              className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-black/10 px-3 py-2 text-xs font-semibold text-black/60 transition hover:bg-black/5"
+            >
+              <Settings className="h-3.5 w-3.5" /> Edit
+            </button>
           </div>
 
-          {/* Premium card */}
-          <div className="mt-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
-            {profile?.is_premium ? (
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-700">
-                      ✦ Vybin Premium
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-black/50">You have access to all premium features.</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-semibold text-black">Upgrade to Premium</p>
-                  <p className="mt-0.5 text-sm text-black/50">
-                    Unlock the class schedule planner and AI assistant — $10/month.
-                  </p>
-                </div>
-                <button
-                  onClick={openPremiumCheckout}
-                  className="flex-shrink-0 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-                  style={{ background: MCGILL_RED }}
-                >
-                  Upgrade — $10/mo
-                </button>
-              </div>
+          {preferences.length ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {preferences.map((p) => (
+                <span key={p} className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                  {p}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-black/40">No interests selected yet.</p>
+          )}
+        </div>
+
+        {/* Notifications card */}
+        <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
+          <div className="flex items-center justify-between px-4 py-3.5 sm:px-5">
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4" style={{ color: MCGILL_RED }} />
+              <span className="font-semibold text-black">Notifications</span>
+              {unreadCount > 0 && (
+                <span className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ background: MCGILL_RED }}>
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+            {notifications.length > 0 && (
+              <button
+                onClick={handleClearAllNotifications}
+                className="text-xs font-semibold text-black/40 transition hover:text-red-500"
+              >
+                Clear all
+              </button>
             )}
           </div>
 
-          <div className="mt-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-4">
-                <div className="relative" ref={cameraRef}>
-                  <img
-                    src={avatarSrc}
-                    alt="Profile"
-                    className="w-20 h-20 rounded-full object-cover border border-black/10 shadow-sm"
-                  />
-
-                  {uploadSuccess && (
-                    <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 border border-black/10 shadow-sm">
-                      <CheckCircle2 className="w-5 h-5" style={{ color: "#10B981" }} />
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => setShowCameraMenu((p) => !p)}
-                    disabled={uploading}
-                    className="absolute -bottom-2 -right-2 p-2 rounded-full border border-black/10 bg-white hover:bg-black/5 transition disabled:opacity-50"
-                    title="Change photo"
-                  >
-                    <Camera className="w-4 h-4" style={{ color: "rgba(0,0,0,0.65)" }} />
-                  </button>
-
-                  {showCameraMenu && (
-                    <div className="absolute top-[88px] left-0 w-52 bg-white border border-black/10 rounded-xl shadow-lg overflow-hidden z-50 text-[13px]">
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full text-left px-3 py-2.5 flex items-center gap-2 hover:bg-black/5 transition text-black/80"
-                      >
-                        <Upload className="w-4 h-4" style={{ color: MCGILL_RED }} />
-                        Upload Photo
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setShowAvatarModal(true);
-                          setShowCameraMenu(false);
-                        }}
-                        className="w-full text-left px-3 py-2.5 flex items-center gap-2 hover:bg-black/5 transition text-black/80"
-                      >
-                        <Eye className="w-4 h-4" style={{ color: MCGILL_RED }} />
-                        View Photo
-                      </button>
-
-                      <button
-                        onClick={handleRemoveAvatar}
-                        className="w-full text-left px-3 py-2.5 flex items-center gap-2 hover:bg-red-500/5 text-red-600 transition"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Remove Photo
-                      </button>
-                    </div>
-                  )}
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
-                </div>
-
-                <div className="min-w-0">
-                  <h2 className="break-words text-xl font-extrabold leading-tight text-black">{displayName}</h2>
-                  <p className="break-all text-sm text-black/60">Signed in as {user?.email ?? "-"}</p>
-                </div>
+          <div className="border-t border-black/5">
+            {loading ? (
+              <div className="px-5 py-8 text-center text-sm text-black/40">Loading...</div>
+            ) : !visibleNotifications.length ? (
+              <div className="px-5 py-10 text-center">
+                <Bell className="mx-auto h-8 w-8 text-black/15" />
+                <p className="mt-2 text-sm text-black/40">No notifications yet</p>
               </div>
-
-              <button
-                onClick={onEditPreferences}
-                className="rounded-xl px-4 py-2.5 text-sm font-semibold border border-black/15 bg-white transition hover:text-white flex items-center justify-center gap-2"
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = MCGILL_RED;
-                  e.currentTarget.style.borderColor = MCGILL_RED;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "white";
-                  e.currentTarget.style.borderColor = "rgba(0,0,0,0.15)";
-                }}
-              >
-                <Settings className="w-4 h-4" />
-                Edit Preferences
-              </button>
-            </div>
-
-            <div className="mt-5 border-t border-black/5 pt-5">
-              <h3 className="text-sm font-bold text-black">Current preferences</h3>
-              <p className="mt-1 text-sm text-black/55">These are the interests currently shaping your feed.</p>
-
-              {preferences.length ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {preferences.map((preference) => (
-                    <span
-                      key={preference}
-                      className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"
+            ) : (
+              <div className="divide-y divide-black/5">
+                {visibleNotifications.map((n) => (
+                  <div key={n.id} className={`flex items-start gap-3 px-4 py-3.5 sm:px-5 ${!n.read ? "bg-red-50/60" : ""}`}>
+                    {!n.read && (
+                      <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full" style={{ background: MCGILL_RED }} />
+                    )}
+                    <button
+                      className={`min-w-0 flex-1 text-left ${n.read ? "pl-4" : ""}`}
+                      onClick={() => n.url && window.open(n.url, "_blank", "noopener,noreferrer")}
+                      disabled={!n.url}
                     >
-                      {preference}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-3 rounded-xl border border-black/10 bg-black/[0.02] px-4 py-3 text-sm text-black/55">
-                  No preferences selected yet.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 pb-10 sm:px-5">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
-            <div className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bell className="w-5 h-5" style={{ color: MCGILL_RED }} />
-                <h3 className="text-lg font-extrabold text-black">Notifications</h3>
+                      <p className="truncate text-sm font-semibold text-black">{n.title}</p>
+                      {n.body && <p className="mt-0.5 text-sm text-black/55 line-clamp-2">{n.body}</p>}
+                      <p className="mt-1 text-[11px] text-black/35">{formatNotificationTimestamp(n.created_at)}</p>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteNotification(n.id)}
+                      className="flex-shrink-0 rounded-full p-1.5 text-black/30 transition hover:bg-black/5 hover:text-black/60"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+                {notifications.length > 20 && (
+                  <p className="px-5 py-3 text-center text-xs text-black/35">
+                    Showing 20 most recent — clear some to see older ones
+                  </p>
+                )}
               </div>
-              {loading && <span className="text-sm text-black/50">Loading...</span>}
-            </div>
-
-            <div className="border-t border-black/5">
-              {!notifications.length ? (
-                <div className="p-8 text-center text-black/60">No new notifications</div>
-              ) : (
-                <div className="divide-y divide-black/5">
-                  {notifications.map((notification) => (
-                    <div key={notification.id} className={`p-4 transition sm:p-5 ${notification.read ? "" : "bg-red-50"}`}>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <button
-                          className="min-w-0 flex-1 text-left"
-                          onClick={() => notification.url && window.open(notification.url, "_blank", "noopener,noreferrer")}
-                          disabled={!notification.url}
-                        >
-                          <p className="break-words font-bold text-black">{notification.title}</p>
-                          {notification.body ? <p className="mt-1 break-words text-sm text-black/60">{notification.body}</p> : null}
-                          <p className="mt-2 text-xs text-black/45">{formatNotificationTimestamp(notification.created_at)}</p>
-                        </button>
-
-                        <div className="flex items-center justify-end gap-2 sm:justify-start">
-                          {!notification.read ? (
-                            <span
-                              className="text-[11px] font-bold px-2 py-1 rounded-full border"
-                              style={{
-                                color: MCGILL_RED,
-                                borderColor: "rgba(237,27,47,0.35)",
-                                background: "rgba(237,27,47,0.08)",
-                              }}
-                            >
-                              New
-                            </span>
-                          ) : null}
-
-                          <button
-                            onClick={() => handleDeleteNotification(notification.id)}
-                            className="p-2 rounded-full border border-black/10 bg-white hover:bg-black/5 transition"
-                            aria-label="Dismiss notification"
-                          >
-                            <X className="w-4 h-4 text-black/60" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
+
       </div>
 
       {showAvatarModal && (
