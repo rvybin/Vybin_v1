@@ -147,20 +147,12 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
       return;
     }
 
-    const fakeNotificationIds = (data ?? [])
-      .filter((notification) => (notification.body ?? "").trim() === "AI Career Networking Panel")
-      .map((notification) => notification.id);
+    const clearedAt = localStorage.getItem(`vybin_notifs_cleared_${user.id}`);
 
-    if (fakeNotificationIds.length) {
-      const { error: cleanupError } = await supabase.from("notifications").delete().in("id", fakeNotificationIds);
-      if (cleanupError) {
-        console.error("Failed to clean fake notifications:", cleanupError.message);
-      }
-    }
-
-    const filtered = (data ?? []).filter((notification) => {
-      if (!SUPPORTED_NOTIFICATION_TYPES.has(notification.type ?? "")) return false;
-      if ((notification.body ?? "").trim() === "AI Career Networking Panel") return false;
+    const filtered = (data ?? []).filter((n) => {
+      if (!SUPPORTED_NOTIFICATION_TYPES.has(n.type ?? "")) return false;
+      if ((n.body ?? "").trim() === "AI Career Networking Panel") return false;
+      if (clearedAt && n.created_at && n.created_at <= clearedAt) return false;
       return true;
     });
     setNotifications(dedupeNotifications(filtered as NotificationRow[]));
@@ -291,9 +283,9 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
 
   const handleClearAllNotifications = async () => {
     if (!user || !notifications.length) return;
-    const ids = notifications.map((n) => n.id);
+    const clearedAt = new Date().toISOString();
+    localStorage.setItem(`vybin_notifs_cleared_${user.id}`, clearedAt);
     setNotifications([]);
-    await supabase.from("notifications").delete().in("id", ids);
   };
 
   return (
