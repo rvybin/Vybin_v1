@@ -345,12 +345,6 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
               <p className="truncate text-sm text-black/50">{user?.email ?? "-"}</p>
             </div>
 
-            <button
-              onClick={() => supabase.auth.signOut()}
-              className="flex-shrink-0 rounded-xl border border-black/10 px-3 py-2 text-xs font-semibold text-black/55 transition hover:bg-black/5"
-            >
-              Sign out
-            </button>
           </div>
         </div>
 
