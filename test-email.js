@@ -1,4 +1,4 @@
-const TO_EMAIL = "yoroeditz@gmail.com";
+const TO_EMAIL = "vyasrohan07@gmail.com";
 
 const html = `<!DOCTYPE html>
 <html lang="en">
@@ -80,7 +80,7 @@ fetch("https://api.resend.com/emails", {
   body: JSON.stringify({
     from: "Vybin <hello@vybin.org>",
     to: TO_EMAIL,
-    subject: "You're now a Vybin Premium member 🎉",
+    subject: `You're now a Vybin Premium member 🎉 [${Date.now()}]`,
     html,
   }),
 })
