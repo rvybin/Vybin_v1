@@ -89,6 +89,54 @@ function welcomeEmail(name: string, email: string, nextBilling: string): string 
 </html>`;
 }
 
+async function sendCancellationEmail(toEmail: string, name: string, accessUntil: string) {
+  const resendKey = Deno.env.get("RESEND_API_KEY");
+  const fromEmail = Deno.env.get("FROM_EMAIL") ?? "Vybin <hello@vybin.org>";
+  if (!resendKey) return;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#f6f7f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:500px;margin:40px auto;padding:0 16px 40px;">
+    <div style="background:#ED1B2F;border-radius:16px 16px 0 0;padding:28px 40px;text-align:center;">
+      <span style="color:white;font-size:28px;font-weight:800;letter-spacing:-0.5px;">vybin</span>
+    </div>
+    <div style="background:#ffffff;border-radius:0 0 16px 16px;padding:36px 40px;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+      <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#111;">Subscription cancelled, ${name}</h1>
+      <p style="margin:0 0 24px;font-size:14px;color:#666;line-height:1.6;">Your Vybin Premium subscription has been cancelled.</p>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #efefef;border-radius:12px;margin-bottom:28px;">
+        <tr style="border-bottom:1px solid #efefef;">
+          <td style="padding:13px 18px;color:#888;font-size:13px;width:50%;">Plan</td>
+          <td style="padding:13px 18px;color:#111;font-size:13px;font-weight:600;text-align:right;">Vybin Premium</td>
+        </tr>
+        <tr>
+          <td style="padding:13px 18px;color:#888;font-size:13px;">Access until</td>
+          <td style="padding:13px 18px;color:#111;font-size:13px;font-weight:600;text-align:right;">${accessUntil}</td>
+        </tr>
+      </table>
+      <p style="margin:0 0 6px;font-size:13px;color:#aaa;">You'll keep full access to all premium features until ${accessUntil}.</p>
+      <p style="margin:0;font-size:13px;color:#aaa;">Want to resubscribe? Visit <a href="https://vybin.org" style="color:#ED1B2F;text-decoration:none;">vybin.org</a> anytime.</p>
+    </div>
+    <p style="text-align:center;margin:20px 0 0;font-size:12px;color:#bbb;">
+      Vybin &middot; <a href="https://vybin.org" style="color:#bbb;text-decoration:none;">vybin.org</a> &middot; Made for McGill students
+    </p>
+  </div>
+</body>
+</html>`;
+
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: fromEmail,
+      to: toEmail,
+      subject: "Your Vybin Premium subscription has been cancelled",
+      html,
+    }),
+  });
+}
+
 async function sendWelcomeEmail(toEmail: string, name: string, nextBilling: string) {
   const resendKey = Deno.env.get("RESEND_API_KEY");
   const fromEmail = Deno.env.get("FROM_EMAIL") ?? "Vybin <hello@vybin.org>";
@@ -192,10 +240,25 @@ Deno.serve(async (req: Request) => {
 
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
+        const customerId = sub.customer as string;
+        const accessUntil = new Date(sub.current_period_end * 1000).toLocaleDateString("en-US", {
+          year: "numeric", month: "long", day: "numeric",
+        });
+
+        const { data: cancelledProfile } = await supabase
+          .from("profiles")
+          .select("email, display_name")
+          .eq("stripe_customer_id" as any, customerId)
+          .maybeSingle();
+
         await supabase
           .from("profiles")
           .update({ is_premium: false, stripe_subscription_id: null } as any)
-          .eq("stripe_customer_id" as any, sub.customer as string);
+          .eq("stripe_customer_id" as any, customerId);
+
+        const cancelEmail = (cancelledProfile as any)?.email;
+        const cancelName = (cancelledProfile as any)?.display_name || cancelEmail?.split("@")[0] || "there";
+        if (cancelEmail) await sendCancellationEmail(cancelEmail, cancelName, accessUntil);
         break;
       }
     }

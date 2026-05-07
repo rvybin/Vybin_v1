@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npx tsc *)",
       "Bash(npm list *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(del \"c:\\\\Users\\\\vyasr\\\\Downloads\\\\project-bolt-sb1-hnhnudbw\\\\project\\\\test-email.js\")",
+      "Bash(del \"c:\\\\Users\\\\vyasr\\\\Downloads\\\\project-bolt-sb1-hnhnudbw\\\\project\\\\email-preview.html\")",
+      "Bash(Remove-Item \"c:\\\\Users\\\\vyasr\\\\Downloads\\\\project-bolt-sb1-hnhnudbw\\\\project\\\\test-email.js\" -Force)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\vyasr\\\\Downloads\\\\project-bolt-sb1-hnhnudbw\\\\project\\\\email-preview.html\" -Force)"
     ]
   }
 }
