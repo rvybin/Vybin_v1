@@ -350,6 +350,16 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
                 </span>
                 <p className="mt-1 text-sm text-black/50">You have access to all premium features.</p>
               </div>
+              <button
+                onClick={async () => {
+                  const { data, error } = await supabase.functions.invoke("create-portal");
+                  if (error || !data?.url) { alert("Could not open billing portal. Please try again."); return; }
+                  window.location.href = data.url;
+                }}
+                className="flex-shrink-0 rounded-xl border border-black/10 px-3 py-2 text-xs font-semibold text-black/55 transition hover:bg-black/5"
+              >
+                Manage subscription
+              </button>
             </div>
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

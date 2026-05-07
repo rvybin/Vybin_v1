@@ -19,72 +19,70 @@ function welcomeEmail(name: string, email: string, nextBilling: string): string 
   <title>Welcome to Vybin Premium</title>
 </head>
 <body style="margin:0;padding:0;background:#f6f7f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:520px;margin:40px auto;padding:0 16px 40px;">
+  <div style="max-width:500px;margin:40px auto;padding:0 16px 40px;">
 
-    <!-- Logo header -->
-    <div style="background:#ED1B2F;border-radius:16px 16px 0 0;padding:28px 40px;text-align:center;">
-      <span style="color:white;font-size:30px;font-weight:800;letter-spacing:-1px;">vybin</span>
+    <!-- Header -->
+    <div style="background:#ED1B2F;border-radius:16px 16px 0 0;padding:24px 40px;text-align:center;">
+      <img src="https://vybin.org/Vybin_Org.png" alt="Vybin" width="56" height="56" style="border-radius:12px;display:block;margin:0 auto;" />
     </div>
 
-    <!-- Main card -->
-    <div style="background:#ffffff;border-radius:0 0 16px 16px;padding:40px;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+    <!-- Card -->
+    <div style="background:#ffffff;border-radius:0 0 16px 16px;padding:36px 40px;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
 
-      <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#111;letter-spacing:-0.3px;">
-        Welcome to Premium, ${name}! 🎉
-      </h1>
-      <p style="margin:0 0 28px;font-size:15px;color:#666;line-height:1.6;">
-        Your subscription is active. Here's everything you now have access to:
-      </p>
+      <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#111;">Welcome to Premium, ${name}!</h1>
+      <p style="margin:0 0 28px;font-size:14px;color:#666;line-height:1.6;">Your Vybin Premium subscription is now active.</p>
 
       <!-- Features -->
-      <div style="background:#fafafa;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
-        <div style="margin-bottom:14px;display:flex;align-items:flex-start;gap:12px;">
-          <span style="color:#ED1B2F;font-weight:700;font-size:16px;line-height:1.4;">✓</span>
-          <div>
-            <strong style="color:#111;font-size:14px;">AI Assistant</strong>
-            <p style="margin:2px 0 0;color:#777;font-size:13px;">Ask anything about McGill — events, courses, campus life, student services.</p>
-          </div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:12px;">
-          <span style="color:#ED1B2F;font-weight:700;font-size:16px;line-height:1.4;">✓</span>
-          <div>
-            <strong style="color:#111;font-size:14px;">Class Schedule Planner</strong>
-            <p style="margin:2px 0 0;color:#777;font-size:13px;">Upload your McGill timetable screenshot and your weekly schedule populates instantly.</p>
-          </div>
-        </div>
+      <div style="background:#fafafa;border-radius:12px;padding:18px 20px;margin-bottom:28px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="width:20px;vertical-align:top;padding-bottom:14px;">
+              <span style="color:#ED1B2F;font-weight:700;font-size:15px;">✓</span>
+            </td>
+            <td style="padding-bottom:14px;padding-left:10px;">
+              <strong style="color:#111;font-size:13px;display:block;">AI Assistant</strong>
+              <span style="color:#777;font-size:13px;">Ask anything about McGill campus life, events and courses.</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="width:20px;vertical-align:top;">
+              <span style="color:#ED1B2F;font-weight:700;font-size:15px;">✓</span>
+            </td>
+            <td style="padding-left:10px;">
+              <strong style="color:#111;font-size:13px;display:block;">Class Schedule Planner</strong>
+              <span style="color:#777;font-size:13px;">Upload your McGill timetable and your weekly schedule populates instantly.</span>
+            </td>
+          </tr>
+        </table>
       </div>
 
       <!-- Receipt -->
-      <div style="border:1px solid #efefef;border-radius:12px;overflow:hidden;margin-bottom:28px;">
-        <div style="padding:14px 20px;display:flex;justify-content:space-between;border-bottom:1px solid #efefef;">
-          <span style="color:#888;font-size:13px;">Plan</span>
-          <span style="color:#111;font-size:13px;font-weight:600;">Vybin Premium</span>
-        </div>
-        <div style="padding:14px 20px;display:flex;justify-content:space-between;border-bottom:1px solid #efefef;">
-          <span style="color:#888;font-size:13px;">Amount</span>
-          <span style="color:#111;font-size:13px;font-weight:600;">CA$10.00 / month</span>
-        </div>
-        <div style="padding:14px 20px;display:flex;justify-content:space-between;border-bottom:1px solid #efefef;">
-          <span style="color:#888;font-size:13px;">Billed to</span>
-          <span style="color:#111;font-size:13px;font-weight:600;">${email}</span>
-        </div>
-        <div style="padding:14px 20px;display:flex;justify-content:space-between;">
-          <span style="color:#888;font-size:13px;">Next billing date</span>
-          <span style="color:#111;font-size:13px;font-weight:600;">${nextBilling}</span>
-        </div>
-      </div>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #efefef;border-radius:12px;overflow:hidden;margin-bottom:28px;">
+        <tr style="border-bottom:1px solid #efefef;">
+          <td style="padding:13px 18px;color:#888;font-size:13px;">Plan</td>
+          <td style="padding:13px 18px;color:#111;font-size:13px;font-weight:600;text-align:right;">Vybin Premium</td>
+        </tr>
+        <tr style="border-bottom:1px solid #efefef;">
+          <td style="padding:13px 18px;color:#888;font-size:13px;">Amount</td>
+          <td style="padding:13px 18px;color:#111;font-size:13px;font-weight:600;text-align:right;">CA$10.00 / month</td>
+        </tr>
+        <tr style="border-bottom:1px solid #efefef;">
+          <td style="padding:13px 18px;color:#888;font-size:13px;">Billed to</td>
+          <td style="padding:13px 18px;color:#111;font-size:13px;font-weight:600;text-align:right;">${email}</td>
+        </tr>
+        <tr>
+          <td style="padding:13px 18px;color:#888;font-size:13px;">Next billing date</td>
+          <td style="padding:13px 18px;color:#111;font-size:13px;font-weight:600;text-align:right;">${nextBilling}</td>
+        </tr>
+      </table>
 
-      <p style="margin:0 0 8px;font-size:13px;color:#999;line-height:1.6;">
-        You can manage or cancel your subscription anytime from the Profile tab in the app.
-      </p>
-      <p style="margin:0;font-size:13px;color:#999;line-height:1.6;">
-        Questions? Reply to this email and we'll get back to you.
-      </p>
+      <p style="margin:0 0 6px;font-size:13px;color:#aaa;">Manage or cancel your subscription at <a href="https://vybin.org" style="color:#ED1B2F;text-decoration:none;">vybin.org</a> under Profile.</p>
+      <p style="margin:0;font-size:13px;color:#aaa;">Questions? Reply to this email anytime.</p>
     </div>
 
     <!-- Footer -->
-    <p style="text-align:center;margin:24px 0 0;font-size:12px;color:#bbb;">
-      Vybin · <a href="https://vybin.org" style="color:#bbb;">vybin.org</a> · Made for McGill students
+    <p style="text-align:center;margin:20px 0 0;font-size:12px;color:#bbb;">
+      Vybin · <a href="https://vybin.org" style="color:#bbb;text-decoration:none;">vybin.org</a> · Made for McGill students
     </p>
   </div>
 </body>
