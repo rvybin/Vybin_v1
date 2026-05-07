@@ -9,8 +9,8 @@ const html = `<!DOCTYPE html>
 <body style="margin:0;padding:0;background:#f6f7f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:500px;margin:40px auto;padding:0 16px 40px;">
 
-    <div style="background:#ED1B2F;border-radius:16px 16px 0 0;padding:24px 40px;text-align:center;">
-      <img src="https://vybin.org/Vybin_Org.png" alt="Vybin" width="56" height="56" style="border-radius:12px;display:block;margin:0 auto;" />
+    <div style="background:#ED1B2F;border-radius:16px 16px 0 0;padding:28px 40px;text-align:center;">
+      <span style="color:white;font-size:28px;font-weight:800;letter-spacing:-0.5px;">vybin</span>
     </div>
 
     <div style="background:#ffffff;border-radius:0 0 16px 16px;padding:36px 40px;box-shadow:0 4px 16px rgba(0,0,0,0.06);">

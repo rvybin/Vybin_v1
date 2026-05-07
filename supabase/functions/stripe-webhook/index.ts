@@ -22,8 +22,8 @@ function welcomeEmail(name: string, email: string, nextBilling: string): string 
   <div style="max-width:500px;margin:40px auto;padding:0 16px 40px;">
 
     <!-- Header -->
-    <div style="background:#ED1B2F;border-radius:16px 16px 0 0;padding:24px 40px;text-align:center;">
-      <img src="https://vybin.org/Vybin_Org.png" alt="Vybin" width="56" height="56" style="border-radius:12px;display:block;margin:0 auto;" />
+    <div style="background:#ED1B2F;border-radius:16px 16px 0 0;padding:28px 40px;text-align:center;">
+      <span style="color:white;font-size:28px;font-weight:800;letter-spacing:-0.5px;">vybin</span>
     </div>
 
     <!-- Card -->
