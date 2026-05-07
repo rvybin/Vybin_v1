@@ -103,11 +103,19 @@ export function PostEventModal({
         status: "pending",
       };
 
-      const { error: insertError } = await supabase
+      const { data: inserted, error: insertError } = await supabase
         .from("event_submissions")
-        .insert(row);
+        .insert(row)
+        .select("id")
+        .single();
 
       if (insertError) throw insertError;
+
+      if (inserted?.id) {
+        supabase.functions.invoke("notify-submission", {
+          body: { submissionId: inserted.id },
+        }).catch(() => {});
+      }
 
       setSuccess(true);
 

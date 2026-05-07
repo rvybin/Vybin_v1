@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { MapPin, Bookmark, CalendarPlus, Eye, CheckCircle2 } from "lucide-react";
+import { MapPin, Bookmark, CalendarPlus, Eye, CheckCircle2, Plus } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { EventModal } from "./EventModal";
+import { PostEventModal } from "./PostEventModal";
 import type { Database } from "../lib/database.types";
 import { buildEventMatchText, matchesInterest, normalizeMatchText } from "../lib/eventMatching";
 
@@ -177,6 +178,7 @@ export function FeedTab() {
   const [markingApplied, setMarkingApplied] = useState(false);
 
   const [fadeState] = useState<"fade-in" | "fade-out">("fade-in");
+  const [isPostEventOpen, setIsPostEventOpen] = useState(false);
   const [windowDays, setWindowDays] = useState<7 | 14 | 30>(14);
 const [interestIconMap, setInterestIconMap] = useState<Record<string, string>>({});
 
@@ -613,7 +615,13 @@ const [interestIconMap, setInterestIconMap] = useState<Record<string, string>>({
                   <WindowPill days={7} />
                   <WindowPill days={14} />
                   <WindowPill days={30} />
-
+                  <button
+                    onClick={() => setIsPostEventOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-black/15 bg-white px-3 py-1.5 text-xs font-semibold text-black/60 transition hover:bg-black/5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Post an event
+                  </button>
                 </div>
               </div>
             </div>
@@ -663,7 +671,10 @@ const [interestIconMap, setInterestIconMap] = useState<Record<string, string>>({
         markingApplied={markingApplied}
       />
 
-
+      <PostEventModal
+        isOpen={isPostEventOpen}
+        onClose={() => setIsPostEventOpen(false)}
+      />
     </>
   );
 }
