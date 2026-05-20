@@ -64,7 +64,7 @@ function welcomeEmail(name: string, email: string, nextBilling: string): string 
         </tr>
         <tr style="border-bottom:1px solid #efefef;">
           <td style="padding:13px 18px;color:#888;font-size:13px;">Amount</td>
-          <td style="padding:13px 18px;color:#111;font-size:13px;font-weight:600;text-align:right;">CA$10.00 / month</td>
+          <td style="padding:13px 18px;color:#111;font-size:13px;font-weight:600;text-align:right;">CA$4.99 / month</td>
         </tr>
         <tr style="border-bottom:1px solid #efefef;">
           <td style="padding:13px 18px;color:#888;font-size:13px;">Billed to</td>

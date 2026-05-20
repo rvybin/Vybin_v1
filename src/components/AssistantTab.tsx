@@ -191,7 +191,7 @@ export function AssistantTab() {
         >
           <Crown className="h-4 w-4" /> Upgrade to Premium
         </button>
-        <p className="mt-3 text-xs text-black/35">Vybin Premium — $10/month</p>
+        <p className="mt-3 text-xs text-black/35">Vybin Premium — $4.99/month</p>
       </div>
     );
   }

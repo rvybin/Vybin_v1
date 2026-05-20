@@ -371,7 +371,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                     <div className="text-center">
                       <h4 className="text-3xl font-extrabold">Premium</h4>
                       <div className="mt-4 flex items-end justify-center gap-1">
-                        <span className="text-5xl font-extrabold">$10</span>
+                        <span className="text-5xl font-extrabold">$4.99</span>
                         <span className="pb-1 text-lg text-white/50">/month</span>
                       </div>
                       <p className="mt-4 text-white/68">
