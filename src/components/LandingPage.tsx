@@ -100,14 +100,14 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-[#1D1D1F]">
-      {/* Soft gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#EFF6FF] via-white to-[#F5F0FF]" />
+      {/* Soft gradient background — blue left, orange right */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#EBF5FF] via-white to-[#FFF4E8]" />
 
       {/* Subtle ambient orbs */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-48 -top-48 h-[700px] w-[700px] rounded-full bg-[#3B82F6]/10 blur-[160px]" />
-        <div className="absolute right-[-220px] top-16 h-[580px] w-[580px] rounded-full bg-[#8B5CF6]/10 blur-[150px]" />
-        <div className="absolute bottom-[-240px] left-[12%] h-[700px] w-[700px] rounded-full bg-[#06B6D4]/8 blur-[160px]" />
+        <div className="absolute -left-48 -top-48 h-[700px] w-[700px] rounded-full bg-[#38BDF8]/12 blur-[160px]" />
+        <div className="absolute right-[-220px] top-16 h-[580px] w-[580px] rounded-full bg-[#FB923C]/10 blur-[150px]" />
+        <div className="absolute bottom-[-240px] left-[12%] h-[700px] w-[700px] rounded-full bg-[#38BDF8]/8 blur-[160px]" />
       </div>
 
       {/* Navbar */}
@@ -116,8 +116,8 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
           <div className="relative flex items-center justify-between rounded-2xl border border-black/[0.07] bg-white/80 px-3 py-3 shadow-[0_2px_24px_rgba(0,0,0,0.08)] backdrop-blur-xl sm:px-4">
             <button onClick={() => scrollToId("top")} className="flex items-center gap-2 select-none -translate-y-[3.5px]">
               <span className="text-xl font-extrabold tracking-tight sm:text-2xl">
-                <span className="text-[#1D1D1F]">vyb</span>
-                <span className="bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] bg-clip-text text-transparent">in</span>
+                <span className="text-[#38BDF8]">vyb</span>
+                <span className="text-[#FB923C]">in</span>
               </span>
             </button>
 
