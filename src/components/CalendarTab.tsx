@@ -135,7 +135,7 @@ export function CalendarTab() {
   const [calendarItems, setCalendarItems] = useState<CalendarItemRow[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
-  const [mobileDayIndex, setMobileDayIndex] = useState(0);
+  const [mobileDayIndex, setMobileDayIndex] = useState(() => (new Date().getDay() + 6) % 7);
 
   useEffect(() => {
     if (!user) return;
@@ -459,7 +459,10 @@ export function CalendarTab() {
                 ‹ Prev
               </button>
               <button
-                onClick={() => setWeekStart(getMonday(new Date()))}
+                onClick={() => {
+                  setWeekStart(getMonday(new Date()));
+                  setMobileDayIndex((new Date().getDay() + 6) % 7);
+                }}
                 className="rounded-lg border border-black/10 px-2.5 py-1 text-xs font-semibold text-black/55 transition hover:bg-black/5"
               >
                 Today
@@ -492,19 +495,24 @@ export function CalendarTab() {
               {/* ── Mobile: day tabs + single-column grid ── */}
               <div className="md:hidden">
                 <div className="flex gap-1.5 overflow-x-auto border-b border-black/5 px-4 py-2.5">
-                  {DAY_LABELS.map((label, i) => (
-                    <button
-                      key={label}
-                      onClick={() => setMobileDayIndex(i)}
-                      className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition ${
-                        mobileDayIndex === i
-                          ? "bg-[#ED1B2F] text-white"
-                          : "border border-black/10 text-black/50 hover:bg-black/5"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
+                  {DAY_LABELS.map((label, i) => {
+                    const isTodayTab = addDays(weekStart, i).toDateString() === new Date().toDateString();
+                    return (
+                      <button
+                        key={label}
+                        onClick={() => setMobileDayIndex(i)}
+                        className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                          mobileDayIndex === i
+                            ? "bg-[#ED1B2F] text-white"
+                            : isTodayTab
+                            ? "border border-[#ED1B2F]/30 bg-[#ED1B2F]/10 text-[#ED1B2F]"
+                            : "border border-black/10 text-black/50 hover:bg-black/5"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="grid grid-cols-[44px_1fr] gap-x-2 px-3 py-3">
