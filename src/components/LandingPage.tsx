@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, ChevronDown, Instagram, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Instagram, Menu, X } from "lucide-react";
 import { Footer } from "./Footer";
 
 interface LandingPageProps {
@@ -11,6 +11,13 @@ interface RevealSectionProps {
   className?: string;
   children: React.ReactNode;
 }
+
+const navLinks = [
+  { label: "Features", id: "features" },
+  { label: "How it works", id: "how" },
+  { label: "Vybin Premium", id: "premium" },
+  { label: "Launch", id: "launch" },
+];
 
 const freePlanFeatures = [
   { label: "Personalized campus event feed", included: true },
@@ -82,6 +89,7 @@ function PlanFeature({ label, included }: { label: string; included: boolean }) 
 
 export function LandingPage({ onGetStarted }: LandingPageProps) {
   const [mounted, setMounted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 40);
@@ -89,6 +97,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
   }, []);
 
   const scrollToId = (id: string) => {
+    setMenuOpen(false);
     const el = document.getElementById(id);
     if (!el) return;
     const headerOffset = window.innerWidth >= 768 ? 118 : 92;
@@ -100,10 +109,10 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-[#1D1D1F]">
-      {/* Soft gradient background — blue left, orange right */}
+      {/* Background gradient — blue left, orange right */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#EBF5FF] via-white to-[#FFF4E8]" />
 
-      {/* Subtle ambient orbs */}
+      {/* Ambient orbs */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-48 -top-48 h-[700px] w-[700px] rounded-full bg-[#38BDF8]/12 blur-[160px]" />
         <div className="absolute right-[-220px] top-16 h-[580px] w-[580px] rounded-full bg-[#FB923C]/10 blur-[150px]" />
@@ -113,21 +122,21 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       {/* Navbar */}
       <div className="fixed left-0 right-0 top-0 z-50">
         <div className="mx-auto max-w-6xl px-3 pt-3 sm:px-4 sm:pt-4">
-          <div className="relative flex items-center justify-between rounded-2xl border border-black/[0.07] bg-white/80 px-3 py-3 shadow-[0_2px_24px_rgba(0,0,0,0.08)] backdrop-blur-xl sm:px-4">
-            <button onClick={() => scrollToId("top")} className="flex items-center gap-2 select-none -translate-y-[3.5px]">
+          {/* Main bar */}
+          <div className="flex items-center justify-between rounded-2xl border border-[#BAE6FD]/70 bg-[#DBEAFE]/80 px-3 py-3 shadow-[0_2px_24px_rgba(14,165,233,0.14)] backdrop-blur-xl sm:px-4">
+            <button
+              onClick={() => scrollToId("top")}
+              className="flex select-none items-center gap-2 -translate-y-[3.5px]"
+            >
               <span className="text-xl font-extrabold tracking-tight sm:text-2xl">
-                <span className="text-[#38BDF8]">vyb</span>
-                <span className="text-[#FB923C]">in</span>
+                <span className="text-[#0EA5E9]">vyb</span>
+                <span className="text-white">in</span>
               </span>
             </button>
 
-            <div className="hidden -translate-y-[2px] items-center gap-7 text-base text-[#6E6E73] md:flex">
-              {[
-                { label: "Features", id: "features" },
-                { label: "How it works", id: "how" },
-                { label: "Vybin Premium", id: "premium" },
-                { label: "Launch", id: "launch" },
-              ].map((link) => (
+            {/* Desktop nav links */}
+            <div className="hidden -translate-y-[2px] items-center gap-6 text-sm text-[#1D1D1F]/70 md:flex">
+              {navLinks.map((link) => (
                 <button
                   key={link.id}
                   onClick={() => scrollToId(link.id)}
@@ -138,15 +147,52 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               ))}
             </div>
 
-            <button
-              onClick={onGetStarted}
-              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-3 py-2 text-xs font-semibold text-white shadow-[0_2px_14px_rgba(14,165,233,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-[0_4px_22px_rgba(14,165,233,0.48)] sm:px-4 sm:text-sm"
-            >
-              <span className="hidden sm:inline">Get Started</span>
-              <span className="sm:hidden">Start</span>
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Get Started — desktop only */}
+              <button
+                onClick={onGetStarted}
+                className="group hidden items-center gap-2 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-4 py-2 text-sm font-semibold text-white shadow-[0_2px_14px_rgba(14,165,233,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-[0_4px_22px_rgba(14,165,233,0.48)] md:inline-flex"
+              >
+                Get Started
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </button>
+
+              {/* Hamburger — mobile only */}
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/60 text-[#1D1D1F] transition hover:bg-white/90 md:hidden"
+                aria-label="Toggle menu"
+              >
+                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
+
+          {/* Mobile dropdown menu */}
+          {menuOpen && (
+            <div className="mt-2 overflow-hidden rounded-2xl border border-[#BAE6FD]/70 bg-[#DBEAFE]/90 p-4 shadow-[0_4px_24px_rgba(14,165,233,0.14)] backdrop-blur-xl md:hidden">
+              <div className="flex flex-col gap-1">
+                {navLinks.map((link) => (
+                  <button
+                    key={link.id}
+                    onClick={() => scrollToId(link.id)}
+                    className="rounded-xl px-4 py-3 text-left text-sm font-medium text-[#1D1D1F] transition hover:bg-white/50"
+                  >
+                    {link.label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 border-t border-[#BAE6FD]/50 pt-3">
+                <button
+                  onClick={onGetStarted}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] py-3 text-sm font-semibold text-white shadow-[0_2px_14px_rgba(14,165,233,0.35)]"
+                >
+                  Get Started
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -154,20 +200,20 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         {/* Hero */}
         <section className="flex min-h-screen items-center justify-center px-4 pt-24 sm:px-6 md:pt-32">
           <div className="w-full max-w-6xl">
-            <div className="mx-auto max-w-4xl text-center">
+            <div className="mx-auto max-w-3xl text-center">
               <div
                 className={[
-                  "mb-7 inline-flex items-center gap-2 rounded-full border border-[#0EA5E9]/25 bg-[#EFF6FF] px-4 py-1.5 text-sm text-[#0369A1] transition-all duration-700",
+                  "mb-6 inline-flex items-center gap-2 rounded-full border border-[#0EA5E9]/25 bg-[#EFF6FF] px-4 py-1.5 text-xs text-[#0369A1] transition-all duration-700 sm:text-sm",
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
-                <span className="h-2 w-2 rounded-full bg-[#0EA5E9]" />
+                <span className="h-2 w-2 shrink-0 rounded-full bg-[#0EA5E9]" />
                 Discover what's happening on campus, fast.
               </div>
 
               <h1
                 className={[
-                  "text-4xl font-extrabold leading-[1.05] tracking-tight text-[#1D1D1F] transition-all duration-700 delay-100 sm:text-5xl md:text-7xl",
+                  "text-4xl font-extrabold leading-[1.08] tracking-tight text-[#1D1D1F] transition-all duration-700 delay-100 sm:text-5xl md:text-6xl lg:text-7xl",
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
@@ -180,14 +226,12 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
               <p
                 className={[
-                  "mx-auto mt-6 max-w-4xl text-sm text-[#6E6E73] transition-all duration-700 delay-200 sm:text-base md:text-[1.02rem]",
+                  "mx-auto mt-5 max-w-xl text-sm leading-relaxed text-[#6E6E73] transition-all duration-700 delay-200 sm:text-base",
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
-                <span className="md:whitespace-nowrap">
-                  Vybin helps students discover the most relevant events and opportunities happening on their campus.
-                </span>
-                <span className="mt-3 block text-[#8E8E93]">
+                Vybin helps students discover the most relevant events and opportunities happening on their campus.
+                <span className="mt-2 block text-[#8E8E93]">
                   Starting with{" "}
                   <span className="font-semibold text-[#ED1B2F]">McGill</span>
                   , expanding to more universities next.
@@ -196,13 +240,13 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
               <div
                 className={[
-                  "mt-10 flex flex-col items-center justify-center gap-4 transition-all duration-700 delay-300 sm:flex-row",
+                  "mt-8 flex flex-col items-center justify-center gap-3 transition-all duration-700 delay-300 sm:flex-row",
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
                 <button
                   onClick={onGetStarted}
-                  className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-7 py-4 font-semibold text-white shadow-[0_4px_24px_rgba(14,165,233,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_36px_rgba(14,165,233,0.52)]"
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-7 py-3.5 font-semibold text-white shadow-[0_4px_24px_rgba(14,165,233,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_36px_rgba(14,165,233,0.52)] sm:w-auto"
                 >
                   Start Vybin
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
@@ -210,7 +254,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
                 <button
                   onClick={() => scrollToId("features")}
-                  className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-6 py-4 text-[#1D1D1F] shadow-[0_2px_14px_rgba(0,0,0,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.1)]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 bg-white px-6 py-3.5 text-[#1D1D1F] shadow-[0_2px_14px_rgba(0,0,0,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.1)] sm:w-auto"
                 >
                   See features <ChevronDown className="h-4 w-4 text-[#6E6E73]" />
                 </button>
@@ -229,19 +273,19 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         </section>
 
         {/* Features */}
-        <RevealSection id="features" className="scroll-mt-24 px-4 pb-16 sm:px-6 sm:pb-20">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-10 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-[#1D1D1F] md:text-4xl">
+        <RevealSection id="features" className="scroll-mt-24 px-4 pb-14 sm:px-6 sm:pb-20">
+          <div className="mx-auto max-w-5xl">
+            <div className="mb-8 text-center">
+              <h2 className="text-2xl font-bold tracking-tight text-[#1D1D1F] sm:text-3xl md:text-4xl">
                 Discover. Connect.{" "}
                 <span className="bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] bg-clip-text text-transparent">Vybe</span>.
               </h2>
-              <p className="mx-auto mt-3 max-w-4xl text-sm text-[#6E6E73] sm:text-base md:whitespace-nowrap">
+              <p className="mx-auto mt-2 max-w-md text-sm text-[#6E6E73] sm:text-base">
                 A focused platform for discovering relevant campus events and tracking the opportunities that matter.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {[
                 {
                   title: "Personalized Feed",
@@ -264,14 +308,14 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               ].map((feature, index) => (
                 <div
                   key={feature.title}
-                  className="group overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_2px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.11)]"
+                  className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_2px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.11)]"
                   style={{ transitionDelay: `${index * 80}ms` }}
                 >
                   <div className={`h-1.5 w-full bg-gradient-to-r ${feature.accent}`} />
-                  <div className="p-6">
-                    <div className="mb-3 flex items-center gap-2.5">
+                  <div className="p-5">
+                    <div className="mb-2 flex items-center gap-2.5">
                       <span className={`h-2.5 w-2.5 rounded-full ${feature.dot}`} />
-                      <h3 className="text-base font-semibold text-[#1D1D1F]">{feature.title}</h3>
+                      <h3 className="text-sm font-semibold text-[#1D1D1F] sm:text-base">{feature.title}</h3>
                     </div>
                     <p className="text-sm text-[#6E6E73]">{feature.desc}</p>
                   </div>
@@ -282,13 +326,13 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         </RevealSection>
 
         {/* How it works */}
-        <RevealSection id="how" className="scroll-mt-24 px-4 pb-16 sm:px-6 sm:pb-20">
-          <div className="mx-auto max-w-6xl">
+        <RevealSection id="how" className="scroll-mt-24 px-4 pb-14 sm:px-6 sm:pb-20">
+          <div className="mx-auto max-w-5xl">
             <div className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white p-5 shadow-[0_2px_24px_rgba(0,0,0,0.07)] sm:p-8">
-              <h3 className="mb-1 text-2xl font-semibold text-[#1D1D1F]">How it works</h3>
-              <p className="mb-7 text-sm text-[#6E6E73]">Three steps to never miss what matters on campus.</p>
+              <h3 className="mb-1 text-xl font-semibold text-[#1D1D1F] sm:text-2xl">How it works</h3>
+              <p className="mb-6 text-sm text-[#6E6E73]">Three steps to never miss what matters on campus.</p>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {[
                   {
                     n: "1",
@@ -315,14 +359,13 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                     badge: "bg-[#F59E0B] text-white",
                   },
                 ].map((step) => (
-                  <div
-                    key={step.n}
-                    className={`rounded-2xl p-6 ${step.bg} transition-all duration-200 hover:-translate-y-0.5`}
-                  >
-                    <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${step.badge} mb-3`}>
+                  <div key={step.n} className={`rounded-2xl p-5 ${step.bg}`}>
+                    <span
+                      className={`mb-3 inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${step.badge}`}
+                    >
                       {step.n}
                     </span>
-                    <div className={`mb-1 text-lg font-extrabold ${step.label}`}>{step.t}</div>
+                    <div className={`mb-1 text-base font-extrabold ${step.label}`}>{step.t}</div>
                     <div className={`text-sm ${step.label} opacity-75`}>{step.d}</div>
                   </div>
                 ))}
@@ -332,38 +375,38 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         </RevealSection>
 
         {/* Premium */}
-        <RevealSection id="premium" className="scroll-mt-24 px-4 pb-16 sm:px-6 sm:pb-20">
-          <div className="mx-auto max-w-7xl">
-            <div className="overflow-hidden rounded-[32px] border border-black/[0.06] bg-white px-5 py-12 shadow-[0_4px_40px_rgba(0,0,0,0.08)] sm:px-8">
-              <div className="mx-auto max-w-3xl text-center">
-                <h3 className="text-3xl font-extrabold tracking-tight text-[#1D1D1F] sm:text-5xl">Choose Your Plan</h3>
-                <p className="mx-auto mt-4 max-w-4xl text-sm text-[#6E6E73] sm:text-base md:whitespace-nowrap">
-                  Start free and upgrade when you're ready for smarter student tools, better organization, and premium Vybin features.
+        <RevealSection id="premium" className="scroll-mt-24 px-4 pb-14 sm:px-6 sm:pb-20">
+          <div className="mx-auto max-w-5xl">
+            <div className="overflow-hidden rounded-[28px] border border-black/[0.06] bg-white px-5 py-10 shadow-[0_4px_40px_rgba(0,0,0,0.08)] sm:px-8 sm:py-12">
+              <div className="mx-auto max-w-2xl text-center">
+                <h3 className="text-2xl font-extrabold tracking-tight text-[#1D1D1F] sm:text-4xl">Choose Your Plan</h3>
+                <p className="mx-auto mt-3 max-w-md text-sm text-[#6E6E73] sm:text-base">
+                  Start free and upgrade when you're ready for smarter student tools and premium Vybin features.
                 </p>
               </div>
 
-              <div className="mt-10 grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
                 {/* Free */}
-                <div className="flex h-full flex-col rounded-[24px] border border-black/[0.07] bg-[#F9F9FB] p-7">
+                <div className="flex h-full flex-col rounded-[20px] border border-black/[0.07] bg-[#F9F9FB] p-6">
                   <div className="text-center">
-                    <h4 className="text-3xl font-extrabold text-[#1D1D1F]">Free</h4>
-                    <div className="mt-4 flex items-end justify-center gap-1">
-                      <span className="text-5xl font-extrabold text-[#1D1D1F]">$0</span>
-                      <span className="pb-1 text-lg text-[#6E6E73]">/forever</span>
+                    <h4 className="text-2xl font-extrabold text-[#1D1D1F] sm:text-3xl">Free</h4>
+                    <div className="mt-3 flex items-end justify-center gap-1">
+                      <span className="text-4xl font-extrabold text-[#1D1D1F] sm:text-5xl">$0</span>
+                      <span className="pb-1 text-base text-[#6E6E73]">/forever</span>
                     </div>
-                    <p className="mt-4 text-[#6E6E73]">A strong free experience for discovering events and staying on top of campus life.</p>
+                    <p className="mt-3 text-sm text-[#6E6E73]">A strong free experience for discovering events and staying on top of campus life.</p>
                   </div>
 
-                  <div className="mt-8 space-y-4 text-sm sm:text-base">
+                  <div className="mt-6 space-y-3 text-sm">
                     {freePlanFeatures.map((feature) => (
                       <PlanFeature key={feature.label} label={feature.label} included={feature.included} />
                     ))}
                   </div>
 
-                  <div className="mt-auto pt-9">
+                  <div className="mt-auto pt-7">
                     <button
                       onClick={onGetStarted}
-                      className="inline-flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-5 py-3.5 font-semibold text-[#1D1D1F] shadow-[0_2px_10px_rgba(0,0,0,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_18px_rgba(0,0,0,0.1)]"
+                      className="inline-flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-[#1D1D1F] shadow-[0_2px_10px_rgba(0,0,0,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_18px_rgba(0,0,0,0.1)]"
                     >
                       Get Started Free
                     </button>
@@ -371,32 +414,32 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 </div>
 
                 {/* Premium */}
-                <div className="relative flex h-full flex-col rounded-[24px] border border-[#0EA5E9]/30 bg-gradient-to-br from-[#EFF6FF] to-[#EEF2FF] p-7 shadow-[0_4px_30px_rgba(14,165,233,0.12)]">
-                  <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-white shadow-[0_2px_14px_rgba(14,165,233,0.35)]">
+                <div className="relative flex h-full flex-col rounded-[20px] border border-[#0EA5E9]/30 bg-gradient-to-br from-[#EFF6FF] to-[#EEF2FF] p-6 shadow-[0_4px_30px_rgba(14,165,233,0.12)]">
+                  <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-white shadow-[0_2px_14px_rgba(14,165,233,0.35)]">
                     Most Popular
                   </div>
 
                   <div className="text-center">
-                    <h4 className="text-3xl font-extrabold text-[#1D1D1F]">Premium</h4>
-                    <div className="mt-4 flex items-end justify-center gap-1">
-                      <span className="text-5xl font-extrabold text-[#1D1D1F]">$4.99</span>
-                      <span className="pb-1 text-lg text-[#6E6E73]">/month</span>
+                    <h4 className="text-2xl font-extrabold text-[#1D1D1F] sm:text-3xl">Premium</h4>
+                    <div className="mt-3 flex items-end justify-center gap-1">
+                      <span className="text-4xl font-extrabold text-[#1D1D1F] sm:text-5xl">$4.99</span>
+                      <span className="pb-1 text-base text-[#6E6E73]">/month</span>
                     </div>
-                    <p className="mt-4 text-[#6E6E73]">
-                      Built for students who want Vybin to do more: smarter answers, better planning, and premium tools in one place.
+                    <p className="mt-3 text-sm text-[#6E6E73]">
+                      Built for students who want Vybin to do more: smarter answers, better planning, and premium tools.
                     </p>
                   </div>
 
-                  <div className="mt-8 space-y-4 text-sm sm:text-base">
+                  <div className="mt-6 space-y-3 text-sm">
                     {premiumPlanFeatures.map((feature) => (
                       <PlanFeature key={feature.label} label={feature.label} included={feature.included} />
                     ))}
                   </div>
 
-                  <div className="mt-auto pt-9">
+                  <div className="mt-auto pt-7">
                     <button
                       onClick={onGetStarted}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-5 py-3.5 font-semibold text-white shadow-[0_4px_20px_rgba(14,165,233,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(14,165,233,0.48)]"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-5 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(14,165,233,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(14,165,233,0.48)]"
                     >
                       Get Started
                       <ArrowRight className="h-4 w-4" />
@@ -409,11 +452,11 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         </RevealSection>
 
         {/* Launch */}
-        <RevealSection id="launch" className="scroll-mt-24 px-4 pb-20 sm:px-6 sm:pb-24">
-          <div className="mx-auto max-w-6xl">
+        <RevealSection id="launch" className="scroll-mt-24 px-4 pb-14 sm:px-6 sm:pb-20">
+          <div className="mx-auto max-w-5xl">
             <div className="rounded-3xl border border-black/[0.06] bg-white p-5 shadow-[0_2px_20px_rgba(0,0,0,0.06)] sm:p-8">
-              <h3 className="mb-2 text-2xl font-semibold text-[#1D1D1F]">Launch</h3>
-              <p className="text-[#6E6E73]">
+              <h3 className="mb-2 text-xl font-semibold text-[#1D1D1F] sm:text-2xl">Launch</h3>
+              <p className="text-sm text-[#6E6E73] sm:text-base">
                 We're starting with{" "}
                 <span className="font-semibold text-[#ED1B2F]">McGill</span>{" "}
                 as our first school, then expanding to more universities.
@@ -424,20 +467,20 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
         {/* Bottom CTA */}
         <RevealSection className="px-4 pb-16 sm:px-6">
-          <div className="mx-auto max-w-6xl">
-            <div className="rounded-3xl border border-black/[0.05] bg-gradient-to-br from-[#EFF6FF] to-[#EEF2FF] px-6 py-16 text-center shadow-[0_2px_20px_rgba(0,0,0,0.05)]">
-              <p className="mb-3 text-lg font-semibold text-[#1D1D1F] md:text-xl">
+          <div className="mx-auto max-w-5xl">
+            <div className="rounded-3xl border border-black/[0.05] bg-gradient-to-br from-[#EFF6FF] to-[#EEF2FF] px-6 py-12 text-center shadow-[0_2px_20px_rgba(0,0,0,0.05)] sm:py-16">
+              <p className="mb-2 text-lg font-semibold text-[#1D1D1F] sm:text-xl">
                 Discover what actually matters to you on campus.
               </p>
-              <p className="mx-auto max-w-3xl text-[#6E6E73]">
+              <p className="mx-auto max-w-sm text-sm text-[#6E6E73] sm:text-base">
                 <span className="bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] bg-clip-text font-semibold text-transparent">Vybin</span>{" "}
                 filters the noise so you never miss what matters.
               </p>
 
-              <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <button
                   onClick={onGetStarted}
-                  className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-8 py-4 font-semibold text-white shadow-[0_4px_24px_rgba(14,165,233,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_36px_rgba(14,165,233,0.52)]"
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-8 py-3.5 font-semibold text-white shadow-[0_4px_24px_rgba(14,165,233,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_36px_rgba(14,165,233,0.52)] sm:w-auto"
                 >
                   Start Vybin
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
@@ -447,7 +490,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   href="https://www.instagram.com/vybin_org/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-6 py-4 text-[#1D1D1F] shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.1)]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 bg-white px-6 py-3.5 text-[#1D1D1F] shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.1)] sm:w-auto"
                 >
                   <Instagram className="h-5 w-5 text-[#DD2A7B]" />
                   Follow @vybin_org
