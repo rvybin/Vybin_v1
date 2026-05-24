@@ -217,9 +217,9 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
-                Find university events you actually{" "}
+                Find university events<br />
                 <span className="inline-block whitespace-nowrap bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] bg-clip-text text-transparent">
-                  care about.
+                  you actually care about.
                 </span>
               </h1>
 
