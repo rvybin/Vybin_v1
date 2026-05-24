@@ -128,8 +128,8 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               onClick={() => scrollToId("top")}
               className="flex select-none items-center gap-2 -translate-y-[3.5px]"
             >
-              <img src="/apple-touch-icon.png" alt="Vybin logo" className="h-10 w-10 rounded-xl object-contain sm:h-11 sm:w-11" />
-              <span className="text-xl font-extrabold tracking-tight text-[#0EA5E9] sm:text-2xl">
+              <img src="/apple-touch-icon.png" alt="Vybin logo" className="h-11 w-11 rounded-xl object-contain sm:h-12 sm:w-12" />
+              <span className="bg-gradient-to-r from-[#38BDF8] to-[#0369A1] bg-clip-text text-xl font-extrabold tracking-tight text-transparent sm:text-2xl">
                 vybin
               </span>
             </button>
@@ -213,26 +213,26 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
               <h1
                 className={[
-                  "text-4xl font-extrabold leading-[1.08] tracking-tight text-[#1D1D1F] transition-all duration-700 delay-100 sm:text-5xl md:text-6xl lg:text-7xl",
+                  "text-4xl font-extrabold leading-[1.18] tracking-tight text-[#1D1D1F] transition-all duration-700 delay-100 sm:text-5xl md:text-6xl lg:text-7xl",
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
                 Find university events<br />
-                <span className="inline-block whitespace-nowrap bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] bg-clip-text text-transparent">
+                <span className="inline-block whitespace-nowrap bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] bg-clip-text pb-2 text-transparent">
                   you actually care about.
                 </span>
               </h1>
 
               <p
                 className={[
-                  "mx-auto mt-5 max-w-xl text-sm leading-relaxed text-[#6E6E73] transition-all duration-700 delay-200 sm:text-base",
+                  "mx-auto mt-10 max-w-3xl text-sm leading-relaxed text-[#6E6E73] transition-all duration-700 delay-200 sm:text-base",
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
-                Vybin helps students discover the most relevant events and opportunities on campus.
-                <span className="mt-2 block text-[#8E8E93]">
+                <span className="md:whitespace-nowrap">Vybin helps students discover the most relevant events and opportunities on campus.</span>
+                <span className="mt-2 block font-bold text-[#6E6E73]">
                   Starting with{" "}
-                  <span className="font-semibold text-[#ED1B2F]">McGill</span>
+                  <span className="text-[#ED1B2F]">McGill</span>
                   , expanding to more universities next.
                 </span>
               </p>
