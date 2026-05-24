@@ -112,8 +112,8 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       {/* Background gradient — blue left, orange right */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#EBF5FF] via-white to-[#FFF4E8]" />
 
-      {/* Ambient orbs */}
-      <div className="pointer-events-none absolute inset-0">
+      {/* Ambient orbs — desktop only to avoid mobile GPU crash */}
+      <div className="pointer-events-none absolute inset-0 hidden sm:block">
         <div className="absolute -left-48 -top-48 h-[700px] w-[700px] rounded-full bg-[#38BDF8]/12 blur-[160px]" />
         <div className="absolute right-[-220px] top-16 h-[580px] w-[580px] rounded-full bg-[#FB923C]/10 blur-[150px]" />
         <div className="absolute bottom-[-240px] left-[12%] h-[700px] w-[700px] rounded-full bg-[#38BDF8]/8 blur-[160px]" />
@@ -128,9 +128,10 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               onClick={() => scrollToId("top")}
               className="flex select-none items-center gap-2 -translate-y-[3.5px]"
             >
+              <img src="/VybinLogo.png" alt="Vybin logo" className="h-8 w-8 object-contain" />
               <span className="text-xl font-extrabold tracking-tight sm:text-2xl">
-                <span className="text-[#0EA5E9]">vyb</span>
-                <span className="text-[#FDBA74]">in</span>
+                <span className="text-[#0EA5E9]">Vyb</span>
+                <span className="text-[#F97316]">in</span>
               </span>
             </button>
 
@@ -217,7 +218,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
-                Find events you actually{" "}
+                Find university events you actually{" "}
                 <span className="bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] bg-clip-text text-transparent">
                   care about
                 </span>
