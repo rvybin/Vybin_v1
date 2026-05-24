@@ -123,15 +123,15 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       <div className="fixed left-0 right-0 top-0 z-50">
         <div className="mx-auto max-w-6xl px-3 pt-3 sm:px-4 sm:pt-4">
           {/* Main bar */}
-          <div className="flex items-center justify-between rounded-2xl border border-[#BAE6FD]/70 bg-[#DBEAFE]/80 px-3 py-3 shadow-[0_2px_24px_rgba(14,165,233,0.14)] backdrop-blur-xl sm:px-4">
+          <div className="flex items-center justify-between rounded-2xl border border-[#93C5FD]/70 bg-[#BFDBFE]/85 px-3 py-3 shadow-[0_2px_24px_rgba(14,165,233,0.18)] backdrop-blur-xl sm:px-4">
             <button
               onClick={() => scrollToId("top")}
               className="flex select-none items-center gap-2 -translate-y-[3.5px]"
             >
-              <img src="/VybinLogo.png" alt="Vybin logo" className="h-8 w-8 object-contain" />
+              <img src="/Vybin_Org.png" alt="Vybin logo" className="h-8 w-8 object-contain mix-blend-multiply" />
               <span className="text-xl font-extrabold tracking-tight sm:text-2xl">
-                <span className="text-[#0EA5E9]">Vyb</span>
-                <span className="text-[#F97316]">in</span>
+                <span className="text-white">Vyb</span>
+                <span className="text-[#0EA5E9]">in</span>
               </span>
             </button>
 
@@ -219,10 +219,9 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 ].join(" ")}
               >
                 Find university events you actually{" "}
-                <span className="bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] bg-clip-text text-transparent">
-                  care about
+                <span className="inline-block whitespace-nowrap bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] bg-clip-text text-transparent">
+                  care about.
                 </span>
-                .
               </h1>
 
               <p
