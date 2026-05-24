@@ -85,13 +85,10 @@ export function LoginScreen() {
       <div className="relative w-full max-w-sm">
         {/* Logo */}
         <div className="mb-7 text-center">
-          <div className="mb-3 flex items-center justify-center gap-2.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-              <img src="/VybinLogo.png" alt="Vybin logo" className="h-9 w-9 object-contain" />
-            </div>
+          <div className="flex items-center justify-center gap-2.5">
+            <img src="/apple-touch-icon.png" alt="Vybin logo" className="h-11 w-11 rounded-xl object-contain" />
             <span className="text-3xl font-extrabold tracking-tight text-[#0EA5E9]">vybin</span>
           </div>
-          <p className="text-sm text-[#6E6E73]">Discover. Connect. Vybe.</p>
         </div>
 
         {/* Card */}
