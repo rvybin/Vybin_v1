@@ -130,17 +130,17 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
             >
               <span className="text-xl font-extrabold tracking-tight sm:text-2xl">
                 <span className="text-[#0EA5E9]">vyb</span>
-                <span className="text-white">in</span>
+                <span className="text-[#FDBA74]">in</span>
               </span>
             </button>
 
             {/* Desktop nav links */}
-            <div className="hidden -translate-y-[2px] items-center gap-6 text-sm text-[#1D1D1F]/70 md:flex">
+            <div className="hidden -translate-y-[2px] items-center gap-8 text-sm font-semibold text-[#1D1D1F]/70 md:flex">
               {navLinks.map((link) => (
                 <button
                   key={link.id}
                   onClick={() => scrollToId(link.id)}
-                  className="transition-colors duration-200 hover:text-[#1D1D1F]"
+                  className="transition-colors duration-200 hover:text-[#FB923C]"
                 >
                   {link.label}
                 </button>
@@ -230,7 +230,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
-                Vybin helps students discover the most relevant events and opportunities happening on their campus.
+                Vybin helps students discover the most relevant events and opportunities on campus.
                 <span className="mt-2 block text-[#8E8E93]">
                   Starting with{" "}
                   <span className="font-semibold text-[#ED1B2F]">McGill</span>
@@ -353,7 +353,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   {
                     n: "3",
                     t: "Discover + track",
-                    d: "Browse, save, and apply — all in one place.",
+                    d: "Browse, save, and apply - all in one place.",
                     bg: "bg-[#FFF7ED]",
                     label: "text-[#92400E]",
                     badge: "bg-[#F59E0B] text-white",
