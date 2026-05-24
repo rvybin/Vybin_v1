@@ -181,7 +181,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
-                Find events you'll actually{" "}
+                Find events you actually{" "}
                 <span className="bg-gradient-to-r from-[#00BFFF] to-[#4C6EF5] bg-clip-text text-transparent">
                   care about
                 </span>
