@@ -128,10 +128,9 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               onClick={() => scrollToId("top")}
               className="flex select-none items-center gap-2 -translate-y-[3.5px]"
             >
-              <img src="/Vybin_Org.png" alt="Vybin logo" className="h-8 w-8 object-contain mix-blend-multiply" />
-              <span className="text-xl font-extrabold tracking-tight sm:text-2xl">
-                <span className="text-white">Vyb</span>
-                <span className="text-[#0EA5E9]">in</span>
+              <img src="/VybinLogo.png" alt="Vybin logo" className="h-8 w-8 object-contain mix-blend-multiply" />
+              <span className="text-xl font-extrabold tracking-tight text-[#0EA5E9] sm:text-2xl">
+                vybin
               </span>
             </button>
 
