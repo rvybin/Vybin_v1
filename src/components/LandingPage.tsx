@@ -213,12 +213,12 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
               <h1
                 className={[
-                  "text-4xl font-extrabold leading-[1.18] tracking-tight text-[#1D1D1F] transition-all duration-700 delay-100 sm:text-5xl md:text-6xl lg:text-7xl",
+                  "text-3xl font-extrabold leading-[1.18] tracking-tight text-[#1D1D1F] transition-all duration-700 delay-100 sm:text-5xl md:text-6xl lg:text-7xl",
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
                 Find university events<br />
-                <span className="inline-block whitespace-nowrap bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] bg-clip-text pb-2 text-transparent">
+                <span className="inline-block bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] bg-clip-text pb-2 text-transparent sm:whitespace-nowrap">
                   you actually care about.
                 </span>
               </h1>
