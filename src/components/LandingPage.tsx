@@ -4,6 +4,8 @@ import { Footer } from "./Footer";
 
 interface LandingPageProps {
   onGetStarted: () => void;
+  isLoggedIn?: boolean;
+  onOpenApp?: () => void;
 }
 
 interface RevealSectionProps {
@@ -87,9 +89,13 @@ function PlanFeature({ label, included }: { label: string; included: boolean }) 
   );
 }
 
-export function LandingPage({ onGetStarted }: LandingPageProps) {
+export function LandingPage({ onGetStarted, isLoggedIn = false, onOpenApp }: LandingPageProps) {
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expandedFeature, setExpandedFeature] = useState<string | null>(null);
+
+  const handleCTA = isLoggedIn && onOpenApp ? onOpenApp : onGetStarted;
+  const ctaLabel = isLoggedIn ? "Open App" : "Get Started";
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 40);
@@ -148,12 +154,12 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Get Started — desktop only */}
+              {/* Get Started / Open App — desktop only */}
               <button
-                onClick={onGetStarted}
+                onClick={handleCTA}
                 className="group hidden items-center gap-2 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-4 py-2 text-sm font-semibold text-white shadow-[0_2px_14px_rgba(14,165,233,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-[0_4px_22px_rgba(14,165,233,0.48)] md:inline-flex"
               >
-                Get Started
+                {ctaLabel}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </button>
 
@@ -184,10 +190,10 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               </div>
               <div className="mt-3 border-t border-[#BAE6FD]/50 pt-3">
                 <button
-                  onClick={onGetStarted}
+                  onClick={handleCTA}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] py-3 text-sm font-semibold text-white shadow-[0_2px_14px_rgba(14,165,233,0.35)]"
                 >
-                  Get Started
+                  {ctaLabel}
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
@@ -244,10 +250,10 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 ].join(" ")}
               >
                 <button
-                  onClick={onGetStarted}
+                  onClick={handleCTA}
                   className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-7 py-3.5 font-semibold text-white shadow-[0_4px_24px_rgba(14,165,233,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_36px_rgba(14,165,233,0.52)] sm:w-auto"
                 >
-                  Start Vybin
+                  {isLoggedIn ? "Open App" : "Start Vybin"}
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
                 </button>
 
@@ -289,37 +295,54 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 {
                   title: "Personalized Feed",
                   desc: "Pick your interests once and see relevant events first.",
+                  detail: "After a one-time setup, your feed surfaces events, clubs, and opportunities that match what you care about. No searching required — Vybin does the filtering so you don't have to.",
                   accent: "from-[#EFF6FF] to-[#EEF2FF]",
                   dot: "bg-[#0EA5E9]",
                 },
                 {
                   title: "Save & Track",
                   desc: "Bookmark events and keep a list of what you applied to.",
+                  detail: "Tap the bookmark icon on any event to save it for later. Your Applications tab keeps everything you've applied to in one place — deadlines, status, and notes — so nothing slips through.",
                   accent: "from-[#F0FDF4] to-[#ECFDF5]",
                   dot: "bg-[#22C55E]",
                 },
                 {
                   title: "Fast, Minimal, Clean",
                   desc: "A UI that's actually usable on desktop and mobile.",
+                  detail: "No clutter, no noise. Vybin loads instantly and feels at home on your phone between classes or your laptop at home. Same clean experience, everywhere.",
                   accent: "from-[#FFF7ED] to-[#FEF3C7]",
                   dot: "bg-[#F59E0B]",
                 },
-              ].map((feature, index) => (
-                <div
-                  key={feature.title}
-                  className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_2px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.11)]"
-                  style={{ transitionDelay: `${index * 80}ms` }}
-                >
-                  <div className={`h-1.5 w-full bg-gradient-to-r ${feature.accent}`} />
-                  <div className="p-5">
-                    <div className="mb-2 flex items-center gap-2.5">
-                      <span className={`h-2.5 w-2.5 rounded-full ${feature.dot}`} />
-                      <h3 className="text-sm font-semibold text-[#1D1D1F] sm:text-base">{feature.title}</h3>
+              ].map((feature, index) => {
+                const isExpanded = expandedFeature === feature.title;
+                return (
+                  <div
+                    key={feature.title}
+                    onClick={() => setExpandedFeature(isExpanded ? null : feature.title)}
+                    className="cursor-pointer overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_2px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.11)]"
+                    style={{ transitionDelay: `${index * 80}ms` }}
+                  >
+                    <div className={`h-1.5 w-full bg-gradient-to-r ${feature.accent}`} />
+                    <div className="p-5">
+                      <div className="mb-2 flex items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${feature.dot}`} />
+                          <h3 className="text-sm font-semibold text-[#1D1D1F] sm:text-base">{feature.title}</h3>
+                        </div>
+                        <ChevronDown
+                          className={`h-4 w-4 shrink-0 text-[#8E8E93] transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                        />
+                      </div>
+                      <p className="text-sm text-[#6E6E73]">{feature.desc}</p>
+                      {isExpanded && (
+                        <p className="mt-3 border-t border-black/[0.06] pt-3 text-sm text-[#6E6E73]">
+                          {feature.detail}
+                        </p>
+                      )}
                     </div>
-                    <p className="text-sm text-[#6E6E73]">{feature.desc}</p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </RevealSection>
@@ -406,10 +429,10 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
                   <div className="mt-auto pt-7">
                     <button
-                      onClick={onGetStarted}
+                      onClick={handleCTA}
                       className="inline-flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-[#1D1D1F] shadow-[0_2px_10px_rgba(0,0,0,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_18px_rgba(0,0,0,0.1)]"
                     >
-                      Get Started Free
+                      {isLoggedIn ? "Open App" : "Get Started Free"}
                     </button>
                   </div>
                 </div>
@@ -439,10 +462,10 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
                   <div className="mt-auto pt-7">
                     <button
-                      onClick={onGetStarted}
+                      onClick={handleCTA}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-5 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(14,165,233,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(14,165,233,0.48)]"
                     >
-                      Get Started
+                      {ctaLabel}
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -480,10 +503,10 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
               <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <button
-                  onClick={onGetStarted}
+                  onClick={handleCTA}
                   className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] px-8 py-3.5 font-semibold text-white shadow-[0_4px_24px_rgba(14,165,233,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_36px_rgba(14,165,233,0.52)] sm:w-auto"
                 >
-                  Start Vybin
+                  {isLoggedIn ? "Open App" : "Start Vybin"}
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
                 </button>
 

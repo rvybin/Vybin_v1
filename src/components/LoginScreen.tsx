@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Mail, Lock, User } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export function LoginScreen() {
@@ -83,6 +84,15 @@ export function LoginScreen() {
       <div className="absolute inset-0 bg-gradient-to-r from-[#EBF5FF] via-white to-[#FFF4E8]" />
 
       <div className="relative w-full max-w-sm">
+        {/* Back link */}
+        <Link
+          to="/"
+          className="mb-5 flex items-center gap-1.5 text-sm font-medium text-[#6E6E73] transition-colors hover:text-[#0EA5E9]"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to home
+        </Link>
+
         {/* Logo */}
         <div className="mb-7 text-center">
           <div className="flex items-center justify-center gap-2.5">

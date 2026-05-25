@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LandingPage } from "./components/LandingPage";
 import { LoginScreen } from "./components/LoginScreen";
@@ -18,24 +18,53 @@ import { TermsPage } from "./pages/TermsPage";
 
 const MCGILL_RED = "#ED1B2F";
 
-function AppContent() {
-  const { user, loading: authLoading } = useAuth();
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center text-[#6E6E73]">
+      Loading…
+    </div>
+  );
+}
 
-  const [showAuth, setShowAuth] = useState(false);
+function LandingRoute() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  if (loading) return <LoadingScreen />;
+  return (
+    <LandingPage
+      onGetStarted={() => navigate("/login")}
+      isLoggedIn={!!user}
+      onOpenApp={() => navigate("/app")}
+    />
+  );
+}
+
+function LoginRoute() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) navigate("/app", { replace: true });
+  }, [user, loading, navigate]);
+
+  if (loading) return <LoadingScreen />;
+  if (user) return null;
+  return <LoginScreen />;
+}
+
+function MainApp() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("feed");
   const [mountedTabs, setMountedTabs] = useState<Set<Tab>>(new Set(["feed"]));
-
-  const handleTabChange = (tab: Tab) => {
-    setMountedTabs((prev) => new Set([...prev, tab]));
-    setActiveTab(tab);
-  };
   const [navAvatarUrl, setNavAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) setShowAuth(false);
-  }, [user]);
+    if (!authLoading && !user) navigate("/", { replace: true });
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (user && !authLoading) checkOnboardingStatus();
@@ -43,38 +72,27 @@ function AppContent() {
   }, [user, authLoading]);
 
   useEffect(() => {
-    if (!user) {
-      setNavAvatarUrl(null);
-      return;
-    }
-
-    const cachedAvatar = localStorage.getItem(`avatar_url_${user.id}`);
-    if (cachedAvatar) setNavAvatarUrl(cachedAvatar);
-
-    const loadNavAvatar = async () => {
-      const { data } = await supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle();
-      const avatarUrl = data?.avatar_url ?? null;
-      setNavAvatarUrl(avatarUrl);
-
-      if (avatarUrl) {
-        localStorage.setItem(`avatar_url_${user.id}`, avatarUrl);
-      }
-    };
-
-    loadNavAvatar();
+    if (!user) { setNavAvatarUrl(null); return; }
+    const cached = localStorage.getItem(`avatar_url_${user.id}`);
+    if (cached) setNavAvatarUrl(cached);
+    supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle().then(({ data }) => {
+      const url = data?.avatar_url ?? null;
+      setNavAvatarUrl(url);
+      if (url) localStorage.setItem(`avatar_url_${user.id}`, url);
+    });
   }, [user]);
+
+  const handleTabChange = (tab: Tab) => {
+    setMountedTabs((prev) => new Set([...prev, tab]));
+    setActiveTab(tab);
+  };
 
   const checkOnboardingStatus = async () => {
     if (!user) return;
     setCheckingOnboarding(true);
-
     try {
       const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarded")
-        .eq("id", user.id)
-        .maybeSingle();
-
+        .from("profiles").select("onboarded").eq("id", user.id).maybeSingle();
       setIsOnboarded(profile?.onboarded === true);
     } catch {
       setIsOnboarded(false);
@@ -83,12 +101,15 @@ function AppContent() {
     }
   };
 
-  const handleOnboardingComplete = () => setIsOnboarded(true);
-
   const handleEditPreferences = async () => {
     if (!user) return;
     await supabase.from("profiles").update({ onboarded: false }).eq("id", user.id);
     setIsOnboarded(false);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/", { replace: true });
   };
 
   const tabLabelMap: Record<Tab, string> = {
@@ -100,84 +121,56 @@ function AppContent() {
     profile: "Profile",
   };
 
-  const showNav = !authLoading && !checkingOnboarding && !!user && isOnboarded;
-  const navAvatar = navAvatarUrl || (user ? localStorage.getItem(`avatar_url_${user.id}`) : null);
-
-  if (authLoading) {
-    return <div className="min-h-screen bg-[#0B0C10] flex items-center justify-center text-white/70">Loading…</div>;
-  }
-
-  if (!user) {
-    return showAuth ? <LoginScreen /> : <LandingPage onGetStarted={() => setShowAuth(true)} />;
-  }
-
-  if (checkingOnboarding) {
-    return <div className="min-h-screen bg-[#0B0C10] flex items-center justify-center text-white/70">Loading…</div>;
-  }
+  if (authLoading || checkingOnboarding) return <LoadingScreen />;
+  if (!user) return null;
 
   if (!isOnboarded) {
-    return <OnboardingScreen onComplete={handleOnboardingComplete} />;
+    return <OnboardingScreen onComplete={() => setIsOnboarded(true)} />;
   }
 
-  // Desktop TopNav
-  const TopNav = () => {
-    const tabBtn = (tab: Tab, label: string) => {
-      const active = activeTab === tab;
-      return (
-        <button
-          onClick={() => handleTabChange(tab)}
-          className={[
-            "px-4 py-2 rounded-xl text-sm font-semibold transition -translate-y-[1px]",
-            active ? "text-[#333333] bg-white" : "text-[#333333]/80 hover:text-white hover:bg-white/60",
-          ].join(" ")}
-        >
-          {label}
-        </button>
-      );
-    };
+  const navAvatar = navAvatarUrl || localStorage.getItem(`avatar_url_${user.id}`);
+  const tabs: Tab[] = ["feed", "applications", "calendar", "assistant", "saved", "profile"];
+  const tabDisplayName = (t: Tab) => t === "assistant" ? "AI" : tabLabelMap[t];
 
-    return (
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-[#F6F7F9] text-black">
+      {/* Desktop TopNav */}
       <div className="hidden md:block fixed top-0 left-0 right-0 z-50">
         <div className="mx-auto max-w-6xl px-4 pt-4">
           <div className="relative">
-            {/* glow */}
             <div className="absolute inset-0 rounded-2xl blur-2xl opacity-50" style={{ background: MCGILL_RED }} />
-
             <div
               className="relative flex items-center justify-between rounded-2xl border border-white/20 backdrop-blur-xl px-5 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.45)]"
               style={{ background: "rgba(237,27,47,0.75)" }}
             >
-              {/* Logo */}
-              <button onClick={() => handleTabChange("feed")} className="flex items-center gap-2 select-none">
+              <button onClick={() => navigate("/")} className="flex items-center gap-2 select-none" title="Back to homepage">
                 <span className="text-2xl font-extrabold tracking-tight text-white">
                   vyb<span className="opacity-90">in</span>
                 </span>
               </button>
 
-              {/* Tabs */}
               <div className="flex items-center gap-2">
-                {tabBtn("feed", "Feed")}
-                {tabBtn("applications", "Applications")}
-                {tabBtn("calendar", "Schedule")}
-                {tabBtn("assistant", "AI")}
-                {tabBtn("saved", "Saved")}
-                {tabBtn("profile", "Profile")}
+                {tabs.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => handleTabChange(tab)}
+                    className={[
+                      "px-4 py-2 rounded-xl text-sm font-semibold transition -translate-y-[1px]",
+                      activeTab === tab
+                        ? "text-[#333333] bg-white"
+                        : "text-[#333333]/80 hover:text-white hover:bg-white/60",
+                    ].join(" ")}
+                  >
+                    {tabDisplayName(tab)}
+                  </button>
+                ))}
               </div>
 
-              {/* Sign out */}
               <div className="flex items-center gap-3">
-                {navAvatar ? (
-                  <img
-                    src={navAvatar}
-                    alt="Profile"
-                    className="h-9 w-9 rounded-full border border-white/25 object-cover"
-                  />
-                ) : null}
-
-                <button
-                  onClick={() => supabase.auth.signOut()}
-                  className="text-sm font-semibold text-white/90 hover:text-white transition"
-                >
+                {navAvatar && (
+                  <img src={navAvatar} alt="Profile" className="h-9 w-9 rounded-full border border-white/25 object-cover" />
+                )}
+                <button onClick={handleSignOut} className="text-sm font-semibold text-white/90 hover:text-white transition">
                   Sign out
                 </button>
               </div>
@@ -185,44 +178,29 @@ function AppContent() {
           </div>
         </div>
       </div>
-    );
-  };
 
-  const MobileHeader = () => (
-    <div className="fixed left-0 right-0 top-0 z-[60] border-b border-black/10 bg-white/95 backdrop-blur md:hidden">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-        <button onClick={() => handleTabChange("feed")} className="flex items-center gap-2 select-none">
-          <span className="text-xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
-            vyb<span className="opacity-90">in</span>
-          </span>
-        </button>
-
-        <div className="text-sm font-semibold text-black/75">{tabLabelMap[activeTab]}</div>
-
-        <div className="flex items-center gap-2">
-          {navAvatar ? (
-            <img
-              src={navAvatar}
-              alt="Profile"
-              className="h-9 w-9 rounded-full border border-black/10 object-cover"
-            />
-          ) : null}
-
-          <button
-            onClick={() => supabase.auth.signOut()}
-            className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-black/70 transition hover:bg-black/5"
-          >
-            Sign out
+      {/* Mobile Header */}
+      <div className="fixed left-0 right-0 top-0 z-[60] border-b border-black/10 bg-white/95 backdrop-blur md:hidden">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+          <button onClick={() => navigate("/")} className="flex items-center gap-2 select-none" title="Back to homepage">
+            <span className="text-xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
+              vyb<span className="opacity-90">in</span>
+            </span>
           </button>
+          <div className="text-sm font-semibold text-black/75">{tabLabelMap[activeTab]}</div>
+          <div className="flex items-center gap-2">
+            {navAvatar && (
+              <img src={navAvatar} alt="Profile" className="h-9 w-9 rounded-full border border-black/10 object-cover" />
+            )}
+            <button
+              onClick={handleSignOut}
+              className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-black/70 transition hover:bg-black/5"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen overflow-x-hidden bg-[#F6F7F9] text-black">
-      {showNav && <TopNav />}
-      {showNav && <MobileHeader />}
 
       <div className="min-h-screen overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-16 md:pb-0 md:pt-24">
         {mountedTabs.has("feed") && <div className={activeTab === "feed" ? "" : "hidden"}><FeedTab /></div>}
@@ -233,7 +211,7 @@ function AppContent() {
         {mountedTabs.has("profile") && <div className={activeTab === "profile" ? "" : "hidden"}><ProfileTab onEditPreferences={handleEditPreferences} /></div>}
       </div>
 
-      {showNav && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />}
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );
 }
@@ -243,7 +221,9 @@ function App() {
     <AuthProvider>
       <CursorGlow />
       <Routes>
-        <Route path="/" element={<AppContent />} />
+        <Route path="/" element={<LandingRoute />} />
+        <Route path="/login" element={<LoginRoute />} />
+        <Route path="/app" element={<MainApp />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
       </Routes>
