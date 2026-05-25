@@ -229,7 +229,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
                 ].join(" ")}
               >
-                <span className="md:whitespace-nowrap">Vybin helps students discover the most relevant events and opportunities on campus.</span>
+                <span className="text-xs md:whitespace-nowrap sm:text-base">Vybin helps students discover the most relevant events and opportunities on campus.</span>
                 <span className="mt-2 block text-xs font-bold text-[#6E6E73] sm:text-base">
                   Starting with{" "}
                   <span className="text-[#ED1B2F]">McGill</span>
