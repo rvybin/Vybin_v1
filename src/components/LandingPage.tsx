@@ -359,12 +359,14 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   },
                 ].map((step) => (
                   <div key={step.n} className={`rounded-2xl p-5 ${step.bg}`}>
-                    <span
-                      className={`mb-3 inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${step.badge}`}
-                    >
-                      {step.n}
-                    </span>
-                    <div className={`mb-1 text-base font-extrabold ${step.label}`}>{step.t}</div>
+                    <div className="mb-1 flex items-center gap-2">
+                      <span
+                        className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${step.badge}`}
+                      >
+                        {step.n}
+                      </span>
+                      <div className={`text-base font-extrabold ${step.label}`}>{step.t}</div>
+                    </div>
                     <div className={`text-sm ${step.label} opacity-75`}>{step.d}</div>
                   </div>
                 ))}
