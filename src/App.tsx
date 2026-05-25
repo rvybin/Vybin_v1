@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Route, Routes, useNavigate } from "react-router-dom";
+import { Route, Routes, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LandingPage } from "./components/LandingPage";
 import { LoginScreen } from "./components/LoginScreen";
@@ -29,7 +29,18 @@ function LoadingScreen() {
 function LandingRoute() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromApp = (location.state as { fromApp?: boolean } | null)?.fromApp === true;
+
+  useEffect(() => {
+    if (!loading && user && !fromApp) {
+      navigate("/app", { replace: true });
+    }
+  }, [user, loading, fromApp, navigate]);
+
   if (loading) return <LoadingScreen />;
+  if (user && !fromApp) return null;
+
   return (
     <LandingPage
       onGetStarted={() => navigate("/login")}
@@ -143,7 +154,7 @@ function MainApp() {
               className="relative flex items-center justify-between rounded-2xl border border-white/20 backdrop-blur-xl px-5 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.45)]"
               style={{ background: "rgba(237,27,47,0.75)" }}
             >
-              <button onClick={() => navigate("/")} className="flex items-center gap-2 select-none" title="Back to homepage">
+              <button onClick={() => navigate("/", { state: { fromApp: true } })} className="flex items-center gap-2 select-none" title="Back to homepage">
                 <span className="text-2xl font-extrabold tracking-tight text-white">
                   vyb<span className="opacity-90">in</span>
                 </span>
@@ -182,7 +193,7 @@ function MainApp() {
       {/* Mobile Header */}
       <div className="fixed left-0 right-0 top-0 z-[60] border-b border-black/10 bg-white/95 backdrop-blur md:hidden">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-          <button onClick={() => navigate("/")} className="flex items-center gap-2 select-none" title="Back to homepage">
+          <button onClick={() => navigate("/", { state: { fromApp: true } })} className="flex items-center gap-2 select-none" title="Back to homepage">
             <span className="text-xl font-extrabold tracking-tight" style={{ color: MCGILL_RED }}>
               vyb<span className="opacity-90">in</span>
             </span>
