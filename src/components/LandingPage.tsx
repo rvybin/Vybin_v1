@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, ChevronDown, Instagram, Menu, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Menu, X } from "lucide-react";
 import { Footer } from "./Footer";
 
 interface LandingPageProps {
@@ -295,21 +295,21 @@ export function LandingPage({ onGetStarted, isLoggedIn = false, onOpenApp }: Lan
                 {
                   title: "Personalized Feed",
                   desc: "Pick your interests once and see relevant events first.",
-                  detail: "After a one-time setup, your feed surfaces events, clubs, and opportunities that match what you care about. No searching required — Vybin does the filtering so you don't have to.",
+                  detail: "Set your interests once and your feed does the rest. Events, clubs, and opportunities that actually match what you're into, without having to search for them.",
                   accent: "from-[#EFF6FF] to-[#EEF2FF]",
                   dot: "bg-[#0EA5E9]",
                 },
                 {
                   title: "Save & Track",
                   desc: "Bookmark events and keep a list of what you applied to.",
-                  detail: "Tap the bookmark icon on any event to save it for later. Your Applications tab keeps everything you've applied to in one place — deadlines, status, and notes — so nothing slips through.",
+                  detail: "Tap the bookmark on any event to save it. The Applications tab keeps track of everything you've applied to, with deadlines and status in one spot.",
                   accent: "from-[#F0FDF4] to-[#ECFDF5]",
                   dot: "bg-[#22C55E]",
                 },
                 {
                   title: "Fast, Minimal, Clean",
                   desc: "A UI that's actually usable on desktop and mobile.",
-                  detail: "No clutter, no noise. Vybin loads instantly and feels at home on your phone between classes or your laptop at home. Same clean experience, everywhere.",
+                  detail: "Built to load fast and stay out of your way. Works just as well on your phone between classes as it does on your laptop at home.",
                   accent: "from-[#FFF7ED] to-[#FEF3C7]",
                   dot: "bg-[#F59E0B]",
                 },
@@ -516,7 +516,11 @@ export function LandingPage({ onGetStarted, isLoggedIn = false, onOpenApp }: Lan
                   rel="noopener noreferrer"
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 bg-white px-6 py-3.5 text-[#1D1D1F] shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.1)] sm:w-auto"
                 >
-                  <Instagram className="h-5 w-5 text-[#DD2A7B]" />
+                  <svg className="h-5 w-5 text-[#DD2A7B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                    <circle cx="12" cy="12" r="4" />
+                    <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                  </svg>
                   Follow @vybin_org
                 </a>
               </div>
