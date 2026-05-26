@@ -49,9 +49,9 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { resumeText, jobDescription } = await req.json();
-    if (!resumeText?.trim() || !jobDescription?.trim()) {
-      return new Response(JSON.stringify({ error: "resumeText and jobDescription are required" }), {
+    const { resumePdfBase64, jobDescription } = await req.json();
+    if (!resumePdfBase64 || !jobDescription?.trim()) {
+      return new Response(JSON.stringify({ error: "resumePdfBase64 and jobDescription are required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -60,10 +60,7 @@ Deno.serve(async (req: Request) => {
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
-    const prompt = `You are an expert resume coach and ATS specialist. Analyze the resume against the job description and return ONLY valid JSON — no markdown, no code fences, no extra text.
-
-RESUME:
-${resumeText.slice(0, 6000)}
+    const prompt = `You are an expert resume coach and ATS specialist. The PDF above is the student's resume. Analyze it against the job description below and return ONLY valid JSON — no markdown, no code fences, no extra text.
 
 JOB DESCRIPTION:
 ${jobDescription.slice(0, 3000)}
@@ -100,7 +97,22 @@ Rules:
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1200,
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "document",
+                source: {
+                  type: "base64",
+                  media_type: "application/pdf",
+                  data: resumePdfBase64,
+                },
+              },
+              { type: "text", text: prompt },
+            ],
+          },
+        ],
       }),
     });
 

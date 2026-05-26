@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { AlertCircle, ArrowRight, CheckCircle2, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { useRef, useState } from "react";
+import { AlertCircle, ArrowRight, CheckCircle2, ChevronDown, ChevronUp, FileText, Sparkles, Upload, X } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 const MCGILL_RED = "#ED1B2F";
@@ -77,23 +77,52 @@ function CategoryBar({ label, score }: { label: string; score: number }) {
 }
 
 export function ResumeOptimizer() {
-  const [resumeText, setResumeText] = useState("");
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedBullet, setExpandedBullet] = useState<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleFile(file: File) {
+    if (file.type !== "application/pdf") {
+      setError("Please upload a PDF file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("PDF must be under 5 MB.");
+      return;
+    }
+    setError(null);
+    setResult(null);
+    setPdfFile(file);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }
 
   async function handleAnalyze() {
-    if (!resumeText.trim() || !jobDescription.trim()) return;
+    if (!pdfFile || !jobDescription.trim()) return;
     setLoading(true);
     setError(null);
     setResult(null);
     setExpandedBullet(null);
 
     try {
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const resumePdfBase64 = btoa(binary);
+
       const { data, error: fnError } = await supabase.functions.invoke("analyze-resume", {
-        body: { resumeText, jobDescription },
+        body: { resumePdfBase64, jobDescription },
       });
 
       if (fnError) throw new Error(fnError.message ?? "Analysis failed");
@@ -110,18 +139,47 @@ export function ResumeOptimizer() {
     <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 pb-8">
       <div className="mx-auto max-w-2xl space-y-4">
 
-        {/* Inputs */}
+        {/* PDF upload */}
         <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
-          <h2 className="text-sm font-bold text-black mb-3">Paste your resume</h2>
-          <textarea
-            value={resumeText}
-            onChange={(e) => setResumeText(e.target.value)}
-            placeholder="Paste your full resume text here..."
-            rows={8}
-            className="w-full resize-none rounded-xl border border-black/10 bg-[#F6F7F9] px-3 py-2.5 text-sm text-black outline-none placeholder:text-black/30 focus:border-black/20 focus:bg-white transition"
+          <h2 className="text-sm font-bold text-black mb-3">Upload your resume</h2>
+          {pdfFile ? (
+            <div className="flex items-center gap-3 rounded-xl border border-black/10 bg-[#F6F7F9] px-4 py-3">
+              <FileText className="h-5 w-5 shrink-0 text-black/40" />
+              <span className="flex-1 truncate text-sm font-medium text-black">{pdfFile.name}</span>
+              <button
+                onClick={() => { setPdfFile(null); setResult(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                className="rounded-full p-1 text-black/30 hover:bg-black/5 hover:text-black/60 transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+              className={`flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition ${
+                dragging ? "border-[#ED1B2F]/40 bg-red-50" : "border-black/10 bg-[#F6F7F9] hover:border-black/20 hover:bg-black/[0.02]"
+              }`}
+            >
+              <Upload className="h-6 w-6 text-black/30" />
+              <div>
+                <p className="text-sm font-semibold text-black/60">Click to upload or drag and drop</p>
+                <p className="text-xs text-black/35 mt-0.5">PDF only · max 5 MB</p>
+              </div>
+            </button>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
           />
         </div>
 
+        {/* Job description */}
         <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
           <h2 className="text-sm font-bold text-black mb-3">Paste the job description</h2>
           <textarea
@@ -135,7 +193,7 @@ export function ResumeOptimizer() {
 
         <button
           onClick={handleAnalyze}
-          disabled={loading || !resumeText.trim() || !jobDescription.trim()}
+          disabled={loading || !pdfFile || !jobDescription.trim()}
           className="w-full inline-flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: MCGILL_RED }}
         >
