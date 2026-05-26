@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = (await import("./supabase")).supabase as any;
+import { supabase } from "./supabase";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
@@ -51,7 +50,9 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
       keys: { p256dh: string; auth: string };
     };
 
-    const { error } = await db.from("push_subscriptions").upsert(
+    // Cast to any because push_subscriptions isn't in the generated types yet
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from("push_subscriptions").upsert(
       { user_id: userId, endpoint, p256dh: keys.p256dh, auth_key: keys.auth },
       { onConflict: "user_id,endpoint" }
     );
@@ -71,7 +72,8 @@ export async function unsubscribeFromPush(userId: string): Promise<void> {
     if (sub) {
       const endpoint = sub.endpoint;
       await sub.unsubscribe();
-      await db
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from("push_subscriptions")
         .delete()
         .eq("user_id", userId)
