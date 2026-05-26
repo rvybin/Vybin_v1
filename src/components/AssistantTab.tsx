@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Crown, Lock, RotateCcw, Send, Sparkles } from "lucide-react";
+import { Crown, FileText, Lock, MessageSquare, RotateCcw, Send, Sparkles } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { openPremiumCheckout } from "../lib/billing";
+import { ResumeOptimizer } from "./ResumeOptimizer";
 
 const MCGILL_RED = "#ED1B2F";
 const LIGHT_BG = "#F6F7F9";
@@ -89,6 +90,7 @@ export function AssistantTab() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
+  const [mode, setMode] = useState<"chat" | "resume">("chat");
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
@@ -201,39 +203,66 @@ export function AssistantTab() {
 
       {/* Header */}
       <div className="flex-shrink-0 border-b border-black/5 bg-white px-4 py-3 sm:px-5">
-        <div className="mx-auto flex max-w-2xl items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div
-              className="flex h-9 w-9 items-center justify-center rounded-xl shadow-sm"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm"
               style={{ background: MCGILL_RED }}
             >
-              <Sparkles className="h-4.5 w-4.5 text-white" />
+              <Sparkles className="h-4 w-4 text-white" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-base font-extrabold tracking-tight text-black">Vybin AI</h1>
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
                   <Crown className="h-3 w-3" /> Premium
                 </span>
               </div>
-              <p className="text-[11px] text-black/40">Your McGill campus expert</p>
+              <p className="text-[11px] text-black/40">
+                {mode === "chat" ? "Your McGill campus expert" : "Resume optimizer"}
+              </p>
             </div>
           </div>
 
-          {messages.length > 0 && (
-            <button
-              onClick={() => { setMessages([]); sessionStorage.removeItem("vybin_chat"); }}
-              className="flex items-center gap-1.5 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-semibold text-black/50 transition hover:bg-black/5"
-            >
-              <RotateCcw className="h-3 w-3" />
-              New chat
-            </button>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Mode toggle */}
+            <div className="flex rounded-xl border border-black/10 bg-black/[0.03] p-0.5">
+              <button
+                onClick={() => setMode("chat")}
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                  mode === "chat" ? "bg-white text-black shadow-sm" : "text-black/45 hover:text-black/70"
+                }`}
+              >
+                <MessageSquare className="h-3.5 w-3.5" /> Chat
+              </button>
+              <button
+                onClick={() => setMode("resume")}
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                  mode === "resume" ? "bg-white text-black shadow-sm" : "text-black/45 hover:text-black/70"
+                }`}
+              >
+                <FileText className="h-3.5 w-3.5" /> Resume
+              </button>
+            </div>
+
+            {mode === "chat" && messages.length > 0 && (
+              <button
+                onClick={() => { setMessages([]); sessionStorage.removeItem("vybin_chat"); }}
+                className="flex items-center gap-1.5 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-semibold text-black/50 transition hover:bg-black/5"
+              >
+                <RotateCcw className="h-3 w-3" />
+                New
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+      {/* Resume mode */}
+      {mode === "resume" && <ResumeOptimizer />}
+
+      {/* Chat messages */}
+      {mode === "chat" && <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
         <div className="mx-auto max-w-2xl space-y-5">
 
           {messages.length === 0 && (
@@ -318,10 +347,10 @@ export function AssistantTab() {
 
           <div ref={bottomRef} />
         </div>
-      </div>
+      </div>}
 
-      {/* Input */}
-      <div className="flex-shrink-0 border-t border-black/5 bg-white px-4 py-3 sm:px-5">
+      {/* Input — chat mode only */}
+      {mode === "chat" && <div className="flex-shrink-0 border-t border-black/5 bg-white px-4 py-3 sm:px-5">
         <div className="mx-auto max-w-2xl">
           <div className="flex items-end gap-2 rounded-2xl border border-black/10 bg-[#F6F7F9] px-4 py-2.5 transition focus-within:border-[#ED1B2F]/30 focus-within:bg-white">
             <textarea
@@ -351,7 +380,7 @@ export function AssistantTab() {
             Enter to send · Shift+Enter for new line
           </p>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

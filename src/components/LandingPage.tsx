@@ -26,16 +26,16 @@ const freePlanFeatures = [
   { label: "Save events and track applications", included: true },
   { label: "Push notifications for new matches and deadlines", included: true },
   { label: "Works on desktop and mobile", included: true },
-  { label: "AI assistant", included: false },
+  { label: "AI assistant + resume optimizer", included: false },
   { label: "Class schedule planner + conflict alerts", included: false },
 ];
 
 const premiumPlanFeatures = [
   { label: "Everything in Free, plus", included: true },
   { label: "AI assistant — ask anything about campus, events, or career", included: true },
+  { label: "Resume optimizer: ATS score, missing keywords, rewritten bullets", included: true },
   { label: "Import your class schedule as a clean weekly planner", included: true },
   { label: "Conflict alerts: get warned when an event clashes with class", included: true },
-  { label: "Early access as Vybin keeps growing", included: true },
 ];
 
 function RevealSection({ id, className = "", children }: RevealSectionProps) {
