@@ -90,7 +90,9 @@ export function AssistantTab() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const [mode, setMode] = useState<"chat" | "resume">("chat");
+  const [mode, setMode] = useState<"chat" | "resume">(() =>
+    (sessionStorage.getItem("vybin_ai_mode") as "chat" | "resume") ?? "chat"
+  );
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
@@ -228,7 +230,7 @@ export function AssistantTab() {
             {/* Mode toggle */}
             <div className="flex rounded-xl border border-black/10 bg-black/[0.03] p-0.5">
               <button
-                onClick={() => setMode("chat")}
+                onClick={() => { setMode("chat"); sessionStorage.setItem("vybin_ai_mode", "chat"); }}
                 className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
                   mode === "chat" ? "bg-white text-black shadow-sm" : "text-black/45 hover:text-black/70"
                 }`}
@@ -236,7 +238,7 @@ export function AssistantTab() {
                 <MessageSquare className="h-3.5 w-3.5" /> Chat
               </button>
               <button
-                onClick={() => setMode("resume")}
+                onClick={() => { setMode("resume"); sessionStorage.setItem("vybin_ai_mode", "resume"); }}
                 className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
                   mode === "resume" ? "bg-white text-black shadow-sm" : "text-black/45 hover:text-black/70"
                 }`}

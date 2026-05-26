@@ -1,5 +1,4 @@
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (event) => event.waitUntil(clients.claim()));
+// No skipWaiting or clients.claim — avoids unexpected page reloads when SW activates
 
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {};

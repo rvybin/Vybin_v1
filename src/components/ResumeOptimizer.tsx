@@ -125,7 +125,14 @@ export function ResumeOptimizer() {
         body: { resumePdfBase64, jobDescription },
       });
 
-      if (fnError) throw new Error(fnError.message ?? "Analysis failed");
+      if (fnError) {
+        let msg = fnError.message ?? "Analysis failed";
+        try {
+          const body = await (fnError as any).context?.json?.();
+          if (body?.error) msg = body.error;
+        } catch {}
+        throw new Error(msg);
+      }
       if (data?.error) throw new Error(data.error);
       setResult(data as AnalysisResult);
     } catch (err: any) {
