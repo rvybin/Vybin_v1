@@ -5,12 +5,18 @@ import {
   Trash2,
   Eye,
   Bell,
+  BellOff,
   X,
   CheckCircle2,
   Settings,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import {
+  getNotificationPermission,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "../lib/pushNotifications";
 import { openPremiumCheckout } from "../lib/billing";
 
 const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
@@ -60,6 +66,8 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [pushPermission, setPushPermission] = useState<ReturnType<typeof getNotificationPermission>>(() => getNotificationPermission());
+  const [pushLoading, setPushLoading] = useState(false);
 
   const cameraRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -288,6 +296,32 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
     setNotifications([]);
   };
 
+  const handleTogglePush = async () => {
+    if (!user) return;
+    setPushLoading(true);
+    try {
+      if (pushPermission === "granted") {
+        await unsubscribeFromPush(user.id);
+        setPushPermission(getNotificationPermission());
+      } else {
+        const ok = await subscribeToPush(user.id);
+        setPushPermission(getNotificationPermission());
+        if (ok) {
+          await supabase.functions.invoke("send-push", {
+            body: {
+              user_id: user.id,
+              title: "Notifications enabled",
+              body: "You'll be notified about new events and upcoming deadlines.",
+              url: "/app",
+            },
+          });
+        }
+      }
+    } finally {
+      setPushLoading(false);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-x-hidden overflow-y-auto pb-24" style={{ background: LIGHT_BG }}>
       <div className="mx-auto max-w-2xl space-y-3 px-4 py-4 sm:px-5 sm:py-6">
@@ -418,14 +452,36 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
                 </span>
               )}
             </div>
-            {notifications.length > 0 && (
-              <button
-                onClick={handleClearAllNotifications}
-                className="text-xs font-semibold text-black/40 transition hover:text-red-500"
-              >
-                Clear all
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {pushPermission !== "unsupported" && (
+                <button
+                  onClick={handleTogglePush}
+                  disabled={pushLoading || pushPermission === "denied"}
+                  title={
+                    pushPermission === "denied"
+                      ? "Notifications blocked in browser settings"
+                      : pushPermission === "granted"
+                      ? "Disable push notifications"
+                      : "Enable push notifications"
+                  }
+                  className="flex items-center gap-1.5 rounded-xl border border-black/10 px-2.5 py-1.5 text-xs font-semibold text-black/60 transition hover:bg-black/5 disabled:opacity-40"
+                >
+                  {pushPermission === "granted" ? (
+                    <><BellOff className="h-3.5 w-3.5" /> On</>
+                  ) : (
+                    <><Bell className="h-3.5 w-3.5" /> {pushPermission === "denied" ? "Blocked" : "Enable"}</>
+                  )}
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={handleClearAllNotifications}
+                  className="text-xs font-semibold text-black/40 transition hover:text-red-500"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="border-t border-black/5">

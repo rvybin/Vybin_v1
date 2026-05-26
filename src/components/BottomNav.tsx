@@ -5,11 +5,12 @@ export type Tab = "feed" | "applications" | "calendar" | "assistant" | "saved" |
 interface BottomNavProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
+  unreadCount?: number;
 }
 
 const MCGILL_RED = "#ED1B2F";
 
-export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
+export function BottomNav({ activeTab, onTabChange, unreadCount = 0 }: BottomNavProps) {
   const tabClass = (tab: Tab) =>
     `min-w-0 flex flex-col items-center justify-center gap-1 px-1 transition-all duration-150 ${
       activeTab === tab ? "scale-[1.06]" : ""
@@ -65,7 +66,17 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
         </button>
 
         <button onClick={() => onTabChange("profile")} className={tabClass("profile")}>
-          <User className="h-5 w-5 sm:h-6 sm:w-6" style={iconStyle("profile")} />
+          <div className="relative">
+            <User className="h-5 w-5 sm:h-6 sm:w-6" style={iconStyle("profile")} />
+            {unreadCount > 0 && (
+              <span
+                className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white"
+                style={{ background: MCGILL_RED }}
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </div>
           <span className="truncate text-[10px] font-semibold sm:text-[11px]" style={textStyle("profile")}>
             Profile
           </span>

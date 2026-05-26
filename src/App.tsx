@@ -12,6 +12,7 @@ import { SavedTab } from "./components/SavedTab";
 import { CalendarTab } from "./components/CalendarTab";
 import { AssistantTab } from "./components/AssistantTab";
 import { supabase } from "./lib/supabase";
+import { registerServiceWorker } from "./lib/pushNotifications";
 import { CursorGlow } from "./components/CursorGlow";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { TermsPage } from "./pages/TermsPage";
@@ -72,6 +73,7 @@ function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>("feed");
   const [mountedTabs, setMountedTabs] = useState<Set<Tab>>(new Set(["feed"]));
   const [navAvatarUrl, setNavAvatarUrl] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/", { replace: true });
@@ -83,6 +85,10 @@ function MainApp() {
   }, [user, authLoading]);
 
   useEffect(() => {
+    registerServiceWorker();
+  }, []);
+
+  useEffect(() => {
     if (!user) { setNavAvatarUrl(null); return; }
     const cached = localStorage.getItem(`avatar_url_${user.id}`);
     if (cached) setNavAvatarUrl(cached);
@@ -91,6 +97,25 @@ function MainApp() {
       setNavAvatarUrl(url);
       if (url) localStorage.setItem(`avatar_url_${user.id}`, url);
     });
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) { setUnreadCount(0); return; }
+    const SUPPORTED = ["interest_match", "saved_reminder"];
+    const clearedAt = localStorage.getItem(`vybin_notifs_cleared_${user.id}`);
+
+    supabase
+      .from("notifications")
+      .select("id, type, created_at", { count: "exact" })
+      .eq("user_id", user.id)
+      .eq("read", false)
+      .in("type", SUPPORTED)
+      .then(({ data }) => {
+        const filtered = (data ?? []).filter(
+          (n) => !clearedAt || !n.created_at || n.created_at > clearedAt
+        );
+        setUnreadCount(filtered.length);
+      });
   }, [user]);
 
   const handleTabChange = (tab: Tab) => {
@@ -222,7 +247,7 @@ function MainApp() {
         {mountedTabs.has("profile") && <div className={activeTab === "profile" ? "" : "hidden"}><ProfileTab onEditPreferences={handleEditPreferences} /></div>}
       </div>
 
-      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} unreadCount={unreadCount} />
     </div>
   );
 }
