@@ -24,18 +24,18 @@ const navLinks = [
 const freePlanFeatures = [
   { label: "Personalized campus event feed", included: true },
   { label: "Save events and track applications", included: true },
-  { label: "Smart reminders and notifications", included: true },
-  { label: "Instant access on desktop and mobile", included: true },
-  { label: "AI assistant for event and application questions", included: false },
-  { label: "Class schedule import and weekly planner", included: false },
+  { label: "Push notifications for new matches and deadlines", included: true },
+  { label: "Works on desktop and mobile", included: true },
+  { label: "AI assistant", included: false },
+  { label: "Class schedule planner + conflict alerts", included: false },
 ];
 
 const premiumPlanFeatures = [
   { label: "Everything in Free, plus", included: true },
-  { label: "AI assistant for student questions and recommendations", included: true },
-  { label: "Class screenshot import into a clean weekly planner", included: true },
-  { label: "Priority access to new Vybin features", included: true },
-  { label: "Smarter organization tools as premium expands", included: true },
+  { label: "AI assistant — ask anything about campus, events, or career", included: true },
+  { label: "Import your class schedule as a clean weekly planner", included: true },
+  { label: "Conflict alerts: get warned when an event clashes with class", included: true },
+  { label: "Early access as Vybin keeps growing", included: true },
 ];
 
 function RevealSection({ id, className = "", children }: RevealSectionProps) {
@@ -450,7 +450,7 @@ export function LandingPage({ onGetStarted, isLoggedIn = false, onOpenApp }: Lan
                       <span className="pb-1 text-base text-[#6E6E73]">/month</span>
                     </div>
                     <p className="mt-3 text-sm text-[#6E6E73]">
-                      Built for students who want Vybin to do more: smarter answers, better planning, and premium tools.
+                      For students who want the full picture: an AI that actually knows your campus, a schedule planner, and alerts that prevent conflicts before they happen.
                     </p>
                   </div>
 
