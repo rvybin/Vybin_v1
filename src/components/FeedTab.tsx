@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { MapPin, Bookmark, CalendarPlus, Eye, CheckCircle2, Plus } from "lucide-react";
+import { MapPin, Bookmark, CalendarPlus, Eye, CheckCircle2, Plus, Clock } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { EventModal } from "./EventModal";
@@ -549,6 +549,13 @@ const [interestIconMap, setInterestIconMap] = useState<Record<string, string>>({
                   {ev.location ?? "McGill University"}
                 </span>
               </div>
+
+              {ev.time && (
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  <span className="font-medium text-black/75">{ev.time}</span>
+                </div>
+              )}
 
               {isApplied && (
                 <div className="flex items-center gap-2 text-sm">
