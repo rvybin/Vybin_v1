@@ -66,7 +66,8 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [pushPermission, setPushPermission] = useState<ReturnType<typeof getNotificationPermission>>(() => getNotificationPermission());
+  const [pushPermission] = useState<ReturnType<typeof getNotificationPermission>>(() => getNotificationPermission());
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
 
   const cameraRef = useRef<HTMLDivElement | null>(null);
@@ -92,6 +93,15 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Check if browser already has an active push subscription
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    navigator.serviceWorker.ready
+      .then((reg) => reg.pushManager.getSubscription())
+      .then((sub) => setIsSubscribed(!!sub))
+      .catch(() => {});
   }, []);
 
   const loadPreferences = async () => {
@@ -300,13 +310,13 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
     if (!user) return;
     setPushLoading(true);
     try {
-      if (pushPermission === "granted") {
+      if (isSubscribed) {
         await unsubscribeFromPush(user.id);
-        setPushPermission(getNotificationPermission());
+        setIsSubscribed(false);
       } else {
         const ok = await subscribeToPush(user.id);
-        setPushPermission(getNotificationPermission());
         if (ok) {
+          setIsSubscribed(true);
           await supabase.functions.invoke("send-push", {
             body: {
               user_id: user.id,
@@ -459,14 +469,16 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
                   disabled={pushLoading || pushPermission === "denied"}
                   title={
                     pushPermission === "denied"
-                      ? "Notifications blocked in browser settings"
-                      : pushPermission === "granted"
+                      ? "Notifications blocked — change in browser settings"
+                      : isSubscribed
                       ? "Disable push notifications"
                       : "Enable push notifications"
                   }
                   className="flex items-center gap-1.5 rounded-xl border border-black/10 px-2.5 py-1.5 text-xs font-semibold text-black/60 transition hover:bg-black/5 disabled:opacity-40"
                 >
-                  {pushPermission === "granted" ? (
+                  {pushLoading ? (
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black/60" />
+                  ) : isSubscribed ? (
                     <><BellOff className="h-3.5 w-3.5" /> On</>
                   ) : (
                     <><Bell className="h-3.5 w-3.5" /> {pushPermission === "denied" ? "Blocked" : "Enable"}</>
