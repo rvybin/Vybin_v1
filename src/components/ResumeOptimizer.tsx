@@ -78,13 +78,33 @@ function CategoryBar({ label, score }: { label: string; score: number }) {
 
 export function ResumeOptimizer() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [jobDescription, setJobDescription] = useState("");
+  const [jobDescription, setJobDescription] = useState<string>(() =>
+    sessionStorage.getItem("vybin_resume_jd") ?? ""
+  );
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(() => {
+    try {
+      const saved = sessionStorage.getItem("vybin_resume_result");
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
   const [error, setError] = useState<string | null>(null);
   const [expandedBullet, setExpandedBullet] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function updateJobDescription(value: string) {
+    setJobDescription(value);
+    sessionStorage.setItem("vybin_resume_jd", value);
+  }
+
+  function clearAll() {
+    setPdfFile(null);
+    setResult(null);
+    setError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    sessionStorage.removeItem("vybin_resume_result");
+  }
 
   function handleFile(file: File) {
     if (file.type !== "application/pdf") {
@@ -134,7 +154,9 @@ export function ResumeOptimizer() {
         throw new Error(msg);
       }
       if (data?.error) throw new Error(data.error);
-      setResult(data as AnalysisResult);
+      const analysis = data as AnalysisResult;
+      setResult(analysis);
+      sessionStorage.setItem("vybin_resume_result", JSON.stringify(analysis));
     } catch (err: any) {
       setError(err.message ?? "Something went wrong. Please try again.");
     } finally {
@@ -154,7 +176,7 @@ export function ResumeOptimizer() {
               <FileText className="h-5 w-5 shrink-0 text-black/40" />
               <span className="flex-1 truncate text-sm font-medium text-black">{pdfFile.name}</span>
               <button
-                onClick={() => { setPdfFile(null); setResult(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                onClick={clearAll}
                 className="rounded-full p-1 text-black/30 hover:bg-black/5 hover:text-black/60 transition"
               >
                 <X className="h-4 w-4" />
@@ -191,7 +213,7 @@ export function ResumeOptimizer() {
           <h2 className="text-sm font-bold text-black mb-3">Paste the job description</h2>
           <textarea
             value={jobDescription}
-            onChange={(e) => setJobDescription(e.target.value)}
+            onChange={(e) => updateJobDescription(e.target.value)}
             placeholder="Paste the full job posting here..."
             rows={6}
             className="w-full resize-none rounded-xl border border-black/10 bg-[#F6F7F9] px-3 py-2.5 text-sm text-black outline-none placeholder:text-black/30 focus:border-black/20 focus:bg-white transition"

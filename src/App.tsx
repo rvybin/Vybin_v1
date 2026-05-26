@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Route, Routes, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LandingPage } from "./components/LandingPage";
@@ -68,6 +68,7 @@ function MainApp() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
+  const onboardingChecked = useRef(false);
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("feed");
@@ -80,7 +81,10 @@ function MainApp() {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (user && !authLoading) checkOnboardingStatus();
+    if (user && !authLoading && !onboardingChecked.current) {
+      onboardingChecked.current = true;
+      checkOnboardingStatus();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 
