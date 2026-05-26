@@ -85,8 +85,19 @@ export function EventModal({
 
       setCheckingConflict(true);
 
-      // 2. Resolve the event time — prefer DB field, fall back to extracting from the link
+      // 2. Resolve the event time — prefer DB field, then date field, then link
       let timeStr: string | null = (event as any).time ?? null;
+
+      // Many events store the time inside event.date as a full UTC datetime (e.g. "2026-05-27T16:00:00Z")
+      // If the UTC time component is non-zero, extract it in local timezone.
+      if (!timeStr && event.date) {
+        const d = new Date(event.date);
+        if (d.getUTCHours() !== 0 || d.getUTCMinutes() !== 0) {
+          const h = d.getHours();
+          const m = d.getMinutes();
+          timeStr = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+        }
+      }
 
       if (!timeStr && event.link) {
         const cacheKey = event.link;
