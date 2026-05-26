@@ -1,6 +1,9 @@
-import { X, Calendar, MapPin, Award, ExternalLink, Tag } from "lucide-react";
-import { useEffect } from "react";
+import { X, Calendar, MapPin, Award, ExternalLink, Tag, AlertTriangle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
+import { findConflicts } from "../lib/conflictCheck";
 
 interface Event {
   id: string;
@@ -35,6 +38,12 @@ export function EventModal({
   markingApplied = false,
 }: EventModalProps) {
   const MCGILL_RED = "#ED1B2F";
+  const { user } = useAuth();
+  const [conflicts, setConflicts] = useState<string[]>([]);
+  const [checkingConflict, setCheckingConflict] = useState(false);
+  const calendarCache = useRef<{ items: any[]; isPremium: boolean } | null>(null);
+  // Cache extracted times per event link so we don't re-fetch on re-open
+  const timeCache = useRef<Map<string, string | null>>(new Map());
 
   useEffect(() => {
     if (!isOpen) return;
@@ -51,6 +60,61 @@ export function EventModal({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen || !user || !event) { setConflicts([]); setCheckingConflict(false); return; }
+
+    async function check() {
+      if (!user || !event) return;
+
+      // 1. Load calendar items + premium status (cached after first load)
+      let cache = calendarCache.current;
+      if (!cache) {
+        const [{ data: profile }, { data: items }] = await Promise.all([
+          supabase.from("profiles").select("is_premium").eq("id", user.id).maybeSingle(),
+          supabase.from("calendar_items")
+            .select("course_code, title, start_at, end_at, rrule")
+            .eq("user_id", user.id),
+        ]);
+        cache = { items: items ?? [], isPremium: (profile as any)?.is_premium === true };
+        calendarCache.current = cache;
+      }
+
+      // Only premium users with a schedule get conflict checks
+      if (!cache.isPremium || !cache.items.length) { setConflicts([]); return; }
+
+      setCheckingConflict(true);
+
+      // 2. Resolve the event time — prefer DB field, fall back to extracting from the link
+      let timeStr: string | null = (event as any).time ?? null;
+
+      if (!timeStr && event.link) {
+        const cacheKey = event.link;
+        if (timeCache.current.has(cacheKey)) {
+          timeStr = timeCache.current.get(cacheKey) ?? null;
+        } else {
+          try {
+            const { data } = await supabase.functions.invoke("get-event-time", {
+              body: { url: event.link },
+            });
+            if (data?.startTime) {
+              timeStr = data.endTime
+                ? `${data.startTime} - ${data.endTime}`
+                : data.startTime;
+            }
+            timeCache.current.set(cacheKey, timeStr);
+          } catch {
+            timeCache.current.set(cacheKey, null);
+          }
+        }
+      }
+
+      setConflicts(findConflicts({ date: event.date, time: timeStr }, cache.items));
+      setCheckingConflict(false);
+    }
+
+    check();
+  }, [isOpen, user, event]);
 
   if (!isOpen || !event) return null;
 
@@ -147,6 +211,24 @@ export function EventModal({
           {/* red accent line */}
           <div className="h-[2px]" style={{ background: MCGILL_RED }} />
         </div>
+
+        {/* Conflict banner */}
+        {checkingConflict && (
+          <div className="border-b border-black/[0.06] bg-[#F6F7F9] px-4 py-2.5 sm:px-6">
+            <p className="text-xs text-black/40">Checking your schedule...</p>
+          </div>
+        )}
+        {!checkingConflict && conflicts.length > 0 && (
+          <div className="flex items-start gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 sm:px-6">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+            <div className="text-sm">
+              <span className="font-semibold text-amber-800">Schedule conflict — </span>
+              <span className="text-amber-700">
+                you have {conflicts.join(" and ")} at this time. You can still apply if you'd like.
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
