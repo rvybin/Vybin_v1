@@ -131,9 +131,12 @@ function MainApp() {
     if (!user) return;
     setCheckingOnboarding(true);
     try {
-      const { data: profile } = await supabase
-        .from("profiles").select("onboarded").eq("id", user.id).maybeSingle();
-      setIsOnboarded(profile?.onboarded === true);
+      const [{ data: profile }, { count }] = await Promise.all([
+        supabase.from("profiles").select("onboarded").eq("id", user.id).maybeSingle(),
+        supabase.from("user_preferences").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+      ]);
+      // Treat as onboarded if the flag is set OR they already have preferences saved
+      setIsOnboarded((profile as any)?.onboarded === true || (count ?? 0) > 0);
     } catch {
       setIsOnboarded(false);
     } finally {

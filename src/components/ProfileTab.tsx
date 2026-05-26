@@ -409,14 +409,14 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-semibold text-black">Upgrade to Premium</p>
-                <p className="mt-0.5 text-sm text-black/50">Unlock the AI assistant and class schedule planner — $4.99/month.</p>
+                <p className="mt-0.5 text-sm text-black/50">Unlock the AI assistant and class schedule planner - $4.99/month.</p>
               </div>
               <button
                 onClick={openPremiumCheckout}
                 className="flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
                 style={{ background: MCGILL_RED }}
               >
-                Upgrade — $4.99/mo
+                Upgrade - $4.99/mo
               </button>
             </div>
           )}
