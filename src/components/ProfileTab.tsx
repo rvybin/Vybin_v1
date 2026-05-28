@@ -463,7 +463,11 @@ export function ProfileTab({ onEditPreferences }: ProfileTabProps) {
               )}
             </div>
             <div className="flex items-center gap-2">
-              {pushPermission !== "unsupported" && (
+              {pushPermission === "unsupported" ? (
+                <span className="text-xs text-black/40 max-w-[160px] text-right leading-tight">
+                  Add to Home Screen to enable notifications
+                </span>
+              ) : (
                 <button
                   onClick={handleTogglePush}
                   disabled={pushLoading || pushPermission === "denied"}
