@@ -741,17 +741,20 @@ export function CalendarTab() {
         </div>
       </div>
 
-      {/* Class reminder modal */}
+      {/* Class reminder modal — bottom sheet on mobile, centered card on desktop */}
       {selectedItem && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
-          style={{ background: "rgba(0,0,0,0.4)" }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center sm:p-4"
+          style={{ background: "rgba(0,0,0,0.45)" }}
           onClick={() => setSelectedItem(null)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+            className="w-full max-h-[85vh] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-sm sm:rounded-2xl"
+            style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Drag handle (mobile only) */}
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-black/10 sm:hidden" />
             {/* Header */}
             <div className="flex items-start justify-between gap-3 mb-4">
               <div className="min-w-0">
