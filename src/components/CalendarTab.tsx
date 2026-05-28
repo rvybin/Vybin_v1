@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Bell, BellOff, CalendarDays, CheckCircle2, Crown, Lock, Sparkles, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, Bell, CalendarDays, CheckCircle2, Crown, Lock, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { openPremiumCheckout } from "../lib/billing";
@@ -26,6 +26,7 @@ type CalendarItemRow = {
   start_at: string;
   end_at: string;
   rrule: string | null;
+  reminder_minutes: number | null;
 };
 
 type CalendarPlacement = CalendarItemRow & {
@@ -137,7 +138,7 @@ export function CalendarTab() {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [mobileDayIndex, setMobileDayIndex] = useState(() => (new Date().getDay() + 6) % 7);
 
-  const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
+  const [selectedItem, setSelectedItem] = useState<CalendarItemRow | null>(null);
   const [savingReminder, setSavingReminder] = useState(false);
   const [isPushSubscribed, setIsPushSubscribed] = useState(false);
 
@@ -157,16 +158,6 @@ export function CalendarTab() {
   }, [user]);
 
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("profiles")
-      .select("reminder_minutes")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => setReminderMinutes((data as any)?.reminder_minutes ?? null));
-  }, [user]);
-
-  useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     navigator.serviceWorker.ready
       .then((reg) => reg.pushManager.getSubscription())
@@ -180,11 +171,11 @@ export function CalendarTab() {
     try {
       const { data, error } = await supabase
         .from("calendar_items")
-        .select("id, title, course_code, location, notes, start_at, end_at, rrule")
+        .select("id, title, course_code, location, notes, start_at, end_at, rrule, reminder_minutes")
         .eq("user_id", user.id)
         .order("start_at", { ascending: true });
       if (error) throw error;
-      setCalendarItems((data ?? []) as CalendarItemRow[]);
+      setCalendarItems((data ?? []) as unknown as CalendarItemRow[]);
     } catch {
       setCalendarItems([]);
     } finally {
@@ -230,16 +221,18 @@ export function CalendarTab() {
     [placements, mobileDayIndex]
   );
 
-  async function handleReminderChange(minutes: number | null) {
-    if (!user || savingReminder) return;
+  async function handleReminderChange(itemId: string, minutes: number | null) {
+    if (savingReminder) return;
     setSavingReminder(true);
-    setReminderMinutes(minutes);
+    setCalendarItems((prev) =>
+      prev.map((item) => item.id === itemId ? { ...item, reminder_minutes: minutes } : item)
+    );
+    setSelectedItem((prev) => prev?.id === itemId ? { ...prev, reminder_minutes: minutes } : prev);
     try {
-      await supabase.from("profiles").update({ reminder_minutes: minutes } as any).eq("id", user.id);
+      await supabase.from("calendar_items").update({ reminder_minutes: minutes } as any).eq("id", itemId);
     } catch {
-      // revert on failure
-      const { data } = await supabase.from("profiles").select("reminder_minutes").eq("id", user.id).maybeSingle();
-      setReminderMinutes((data as any)?.reminder_minutes ?? null);
+      // revert
+      await loadItems();
     } finally {
       setSavingReminder(false);
     }
@@ -476,58 +469,6 @@ export function CalendarTab() {
           </div>
         </div>
 
-        {/* Class Reminders card */}
-        <div className="mb-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex items-start gap-3">
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-              style={{ background: MCGILL_RED }}
-            >
-              <Bell className="h-4 w-4 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-black text-sm">Class Reminders</p>
-              {!isPushSubscribed ? (
-                <p className="mt-1 text-xs text-black/50">
-                  Enable push notifications in your{" "}
-                  <span className="font-semibold text-black/70">Profile</span> tab to get class reminders.
-                </p>
-              ) : (
-                <>
-                  <p className="mt-0.5 text-xs text-black/45">Notify me before class starts</p>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {([null, 5, 10, 15, 30, 60] as (number | null)[]).map((val) => {
-                      const label = val === null ? "Off" : val === 60 ? "1 hr" : `${val} min`;
-                      const active = reminderMinutes === val;
-                      return (
-                        <button
-                          key={String(val)}
-                          onClick={() => handleReminderChange(val)}
-                          disabled={savingReminder}
-                          className={[
-                            "rounded-full px-3 py-1 text-xs font-semibold transition disabled:opacity-50",
-                            active
-                              ? "text-white"
-                              : "border border-black/10 bg-black/[0.03] text-black/55 hover:bg-black/[0.06]",
-                          ].join(" ")}
-                          style={active ? { background: MCGILL_RED } : {}}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                    {reminderMinutes !== null && (
-                      <span className="ml-1 flex items-center gap-1 text-xs text-black/35">
-                        <BellOff className="h-3 w-3" /> Select Off to disable
-                      </span>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* Calendar card */}
         <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
 
@@ -638,9 +579,10 @@ export function CalendarTab() {
                       );
                       const pct = 100 / p.colTotal;
                       return (
-                        <div
+                        <button
                           key={p.id}
-                          className="absolute overflow-hidden rounded-xl bg-gradient-to-b from-[#ED1B2F] to-[#C01020] px-2.5 py-2 shadow-md"
+                          onClick={() => setSelectedItem(p)}
+                          className="absolute overflow-hidden rounded-xl bg-gradient-to-b from-[#ED1B2F] to-[#C01020] px-2.5 py-2 shadow-md text-left active:opacity-80 transition-opacity"
                           style={{
                             top: top + 2,
                             height: height - 4,
@@ -648,9 +590,14 @@ export function CalendarTab() {
                             width: `${pct - 2}%`,
                           }}
                         >
-                          <p className="truncate text-[12px] font-bold leading-tight text-white">
-                            {p.course_code ?? p.title}
-                          </p>
+                          <div className="flex items-start justify-between gap-1">
+                            <p className="truncate text-[12px] font-bold leading-tight text-white">
+                              {p.course_code ?? p.title}
+                            </p>
+                            {p.reminder_minutes !== null && (
+                              <Bell className="h-2.5 w-2.5 shrink-0 text-white/80 mt-0.5" />
+                            )}
+                          </div>
                           <p className="mt-0.5 truncate text-[10px] leading-tight text-white/75">
                             {formatBlockTime(p.start_at)} – {formatBlockTime(p.end_at)}
                           </p>
@@ -659,7 +606,7 @@ export function CalendarTab() {
                               {p.location}
                             </p>
                           )}
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -750,10 +697,10 @@ export function CalendarTab() {
                             const blockH = Math.max(rawH, 32) - 4;
                             const pct = 100 / p.colTotal;
                             return (
-                              <div
+                              <button
                                 key={p.id}
-                                title={`${p.course_code ?? p.title}${p.location ? ` · ${p.location}` : ""}`}
-                                className="absolute overflow-hidden rounded-lg bg-gradient-to-b from-[#ED1B2F] to-[#C01020] shadow-sm"
+                                onClick={() => setSelectedItem(p)}
+                                className="absolute overflow-hidden rounded-lg bg-gradient-to-b from-[#ED1B2F] to-[#C01020] shadow-sm text-left hover:opacity-90 transition-opacity"
                                 style={{
                                   top: top + 2,
                                   height: blockH,
@@ -762,9 +709,14 @@ export function CalendarTab() {
                                   padding: "4px 6px",
                                 }}
                               >
-                                <p className="truncate text-[10px] font-bold leading-tight text-white">
-                                  {p.course_code ?? p.title}
-                                </p>
+                                <div className="flex items-start justify-between gap-0.5">
+                                  <p className="truncate text-[10px] font-bold leading-tight text-white">
+                                    {p.course_code ?? p.title}
+                                  </p>
+                                  {p.reminder_minutes !== null && (
+                                    <Bell className="h-2 w-2 shrink-0 text-white/80 mt-px" />
+                                  )}
+                                </div>
                                 {rawH > 36 && (
                                   <p className="mt-px truncate text-[8.5px] leading-tight text-white/75">
                                     {formatBlockTime(p.start_at)} – {formatBlockTime(p.end_at)}
@@ -775,7 +727,7 @@ export function CalendarTab() {
                                     {p.location}
                                   </p>
                                 )}
-                              </div>
+                              </button>
                             );
                           })}
                         </div>
@@ -788,6 +740,78 @@ export function CalendarTab() {
           )}
         </div>
       </div>
+
+      {/* Class reminder modal */}
+      {selectedItem && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
+          style={{ background: "rgba(0,0,0,0.4)" }}
+          onClick={() => setSelectedItem(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="min-w-0">
+                <p className="font-extrabold text-black truncate">
+                  {selectedItem.course_code ?? selectedItem.title}
+                </p>
+                {selectedItem.course_code && selectedItem.title !== selectedItem.course_code && (
+                  <p className="text-xs text-black/45 truncate mt-0.5">{selectedItem.title}</p>
+                )}
+                <p className="text-sm text-black/50 mt-0.5">
+                  {formatBlockTime(selectedItem.start_at)} – {formatBlockTime(selectedItem.end_at)}
+                </p>
+                {selectedItem.location && (
+                  <p className="text-xs text-black/40 mt-0.5">{selectedItem.location}</p>
+                )}
+              </div>
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="shrink-0 rounded-full p-1.5 text-black/30 hover:bg-black/5 hover:text-black/60 transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="border-t border-black/8 pt-4">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-black/35 mb-3">
+                Remind me before class
+              </p>
+              {!isPushSubscribed ? (
+                <p className="text-sm text-black/50">
+                  Enable push notifications in your <span className="font-semibold text-black/70">Profile</span> tab first.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {([null, 5, 10, 15, 30, 60] as (number | null)[]).map((val) => {
+                    const label = val === null ? "Off" : val === 60 ? "1 hr before" : `${val} min before`;
+                    const active = selectedItem.reminder_minutes === val;
+                    return (
+                      <button
+                        key={String(val)}
+                        onClick={() => handleReminderChange(selectedItem.id, val)}
+                        disabled={savingReminder}
+                        className={[
+                          "rounded-full px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50",
+                          active
+                            ? "text-white"
+                            : "border border-black/10 bg-black/[0.03] text-black/60 hover:bg-black/[0.07]",
+                        ].join(" ")}
+                        style={active ? { background: MCGILL_RED } : {}}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
