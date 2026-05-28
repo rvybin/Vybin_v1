@@ -9,7 +9,7 @@ workflows:
         XCODE_WORKSPACE: ios/App/App.xcworkspace
         XCODE_SCHEME: App
         BUNDLE_ID: org.vybin.app
-      node: 20.11.0
+      node: 22.13.0
 
     scripts:
       - name: Install dependencies
