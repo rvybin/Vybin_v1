@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CalendarDays, CheckCircle2, Crown, Lock, Sparkles, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, Bell, BellOff, CalendarDays, CheckCircle2, Crown, Lock, Sparkles, Trash2, Upload } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { openPremiumCheckout } from "../lib/billing";
@@ -137,6 +137,10 @@ export function CalendarTab() {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [mobileDayIndex, setMobileDayIndex] = useState(() => (new Date().getDay() + 6) % 7);
 
+  const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
+  const [savingReminder, setSavingReminder] = useState(false);
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -151,6 +155,24 @@ export function CalendarTab() {
     if (!user) return;
     loadItems();
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("reminder_minutes")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setReminderMinutes((data as any)?.reminder_minutes ?? null));
+  }, [user]);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    navigator.serviceWorker.ready
+      .then((reg) => reg.pushManager.getSubscription())
+      .then((sub) => setIsPushSubscribed(!!sub))
+      .catch(() => {});
+  }, []);
 
   async function loadItems() {
     if (!user) return;
@@ -207,6 +229,21 @@ export function CalendarTab() {
     () => placements.filter((p) => p.dayIndex === mobileDayIndex),
     [placements, mobileDayIndex]
   );
+
+  async function handleReminderChange(minutes: number | null) {
+    if (!user || savingReminder) return;
+    setSavingReminder(true);
+    setReminderMinutes(minutes);
+    try {
+      await supabase.from("profiles").update({ reminder_minutes: minutes } as any).eq("id", user.id);
+    } catch {
+      // revert on failure
+      const { data } = await supabase.from("profiles").select("reminder_minutes").eq("id", user.id).maybeSingle();
+      setReminderMinutes((data as any)?.reminder_minutes ?? null);
+    } finally {
+      setSavingReminder(false);
+    }
+  }
 
   async function clearSchedule() {
     if (!user) return;
@@ -434,6 +471,58 @@ export function CalendarTab() {
                     : <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />}
                   {message}
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Class Reminders card */}
+        <div className="mb-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex items-start gap-3">
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+              style={{ background: MCGILL_RED }}
+            >
+              <Bell className="h-4 w-4 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-black text-sm">Class Reminders</p>
+              {!isPushSubscribed ? (
+                <p className="mt-1 text-xs text-black/50">
+                  Enable push notifications in your{" "}
+                  <span className="font-semibold text-black/70">Profile</span> tab to get class reminders.
+                </p>
+              ) : (
+                <>
+                  <p className="mt-0.5 text-xs text-black/45">Notify me before class starts</p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {([null, 5, 10, 15, 30, 60] as (number | null)[]).map((val) => {
+                      const label = val === null ? "Off" : val === 60 ? "1 hr" : `${val} min`;
+                      const active = reminderMinutes === val;
+                      return (
+                        <button
+                          key={String(val)}
+                          onClick={() => handleReminderChange(val)}
+                          disabled={savingReminder}
+                          className={[
+                            "rounded-full px-3 py-1 text-xs font-semibold transition disabled:opacity-50",
+                            active
+                              ? "text-white"
+                              : "border border-black/10 bg-black/[0.03] text-black/55 hover:bg-black/[0.06]",
+                          ].join(" ")}
+                          style={active ? { background: MCGILL_RED } : {}}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                    {reminderMinutes !== null && (
+                      <span className="ml-1 flex items-center gap-1 text-xs text-black/35">
+                        <BellOff className="h-3 w-3" /> Select Off to disable
+                      </span>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>
