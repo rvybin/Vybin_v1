@@ -7,6 +7,33 @@ import { parseScheduleFromStorage } from "../lib/scheduleOcr";
 
 const MCGILL_RED = "#ED1B2F";
 const LIGHT_BG = "#F6F7F9";
+
+const COURSE_PALETTE = [
+  { from: "#3B82F6", to: "#1D4ED8" }, // blue
+  { from: "#10B981", to: "#047857" }, // emerald
+  { from: "#8B5CF6", to: "#6D28D9" }, // violet
+  { from: "#F97316", to: "#C2410C" }, // orange
+  { from: "#EC4899", to: "#BE185D" }, // pink
+  { from: "#06B6D4", to: "#0E7490" }, // cyan
+  { from: "#EAB308", to: "#A16207" }, // yellow
+  { from: "#6366F1", to: "#4338CA" }, // indigo
+  { from: "#14B8A6", to: "#0F766E" }, // teal
+  { from: "#A855F7", to: "#7E22CE" }, // purple
+];
+
+function baseCourse(code: string | null): string {
+  if (!code) return "";
+  // Strip section suffix: "ECSE 222-001" → "ECSE 222"
+  return code.replace(/-\w+$/, "").trim();
+}
+
+function courseColor(code: string | null) {
+  const base = baseCourse(code);
+  if (!base) return COURSE_PALETTE[0];
+  let h = 0;
+  for (let i = 0; i < base.length; i++) h = (h * 31 + base.charCodeAt(i)) >>> 0;
+  return COURSE_PALETTE[h % COURSE_PALETTE.length];
+}
 const BUCKET = "calendar_uploads";
 const ALLOWED_MIME = new Set(["image/png", "image/jpeg"]);
 const MAX_MB = 12;
@@ -578,16 +605,18 @@ export function CalendarTab() {
                         48
                       );
                       const pct = 100 / p.colTotal;
+                      const color = courseColor(p.course_code);
                       return (
                         <button
                           key={p.id}
                           onClick={() => setSelectedItem(p)}
-                          className="absolute overflow-hidden rounded-xl bg-gradient-to-b from-[#ED1B2F] to-[#C01020] px-2.5 py-2 shadow-md text-left active:opacity-80 transition-opacity"
+                          className="absolute overflow-hidden rounded-xl px-2.5 py-2 shadow-md text-left active:opacity-80 transition-opacity"
                           style={{
                             top: top + 2,
                             height: height - 4,
                             left: `${p.colOffset * pct + 1}%`,
                             width: `${pct - 2}%`,
+                            background: `linear-gradient(to bottom, ${color.from}, ${color.to})`,
                           }}
                         >
                           <div className="flex items-start justify-between gap-1">
@@ -696,17 +725,19 @@ export function CalendarTab() {
                             const top = ((p.startMinutes - HOURS[0] * 60) / 60) * PX_PER_HOUR;
                             const blockH = Math.max(rawH, 32) - 4;
                             const pct = 100 / p.colTotal;
+                            const color = courseColor(p.course_code);
                             return (
                               <button
                                 key={p.id}
                                 onClick={() => setSelectedItem(p)}
-                                className="absolute overflow-hidden rounded-lg bg-gradient-to-b from-[#ED1B2F] to-[#C01020] shadow-sm text-left hover:opacity-90 transition-opacity"
+                                className="absolute overflow-hidden rounded-lg shadow-sm text-left hover:opacity-90 transition-opacity"
                                 style={{
                                   top: top + 2,
                                   height: blockH,
                                   left: `${p.colOffset * pct + 2}%`,
                                   width: `${pct - 4}%`,
                                   padding: "4px 6px",
+                                  background: `linear-gradient(to bottom, ${color.from}, ${color.to})`,
                                 }}
                               >
                                 <div className="flex items-start justify-between gap-0.5">

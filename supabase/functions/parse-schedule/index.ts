@@ -111,7 +111,13 @@ Each object must have exactly these fields:
 - "endTime": 24-hour format string "HH:MM" (e.g. "10:25")
 - "location": building name and room (e.g. "Leacock Building 132"), or null if not visible
 
-Rules:
+TIME ACCURACY RULES (critical — read carefully):
+- Determine startTime and endTime from the VISUAL POSITION of each block in the grid. The left column shows hour markers; use the block's top edge for startTime and bottom edge for endTime.
+- The time text printed inside Minerva cells (e.g. "8:35 am-9:55 am") often belongs to the course's other sections and can be WRONG for the specific slot displayed. Always verify against the visual grid position.
+- McGill standard session lengths: 50 minutes ("1 hr" in course listings) or 80 minutes ("1.5 hr"). A cell labelled "1 times 1 hr/wk" means one 50-minute session — compute endTime as startTime + 50 min, regardless of what the cell text says.
+- NEVER output two classes on the same day with overlapping times. If a conflict arises from cell text, trust the visual grid position to resolve it.
+
+Other rules:
 - If the same course appears in multiple day columns, create a separate entry per day
 - Do not duplicate the same course on the same day at the same time
 - Convert all am/pm times to 24-hour format
