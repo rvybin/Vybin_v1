@@ -1,5 +1,6 @@
 import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, tooManyRequests } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +34,10 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Rate limit: 10 portal sessions per user per hour
+    const rl = await checkRateLimit(`create-portal:${user.id}`, 10, 3600);
+    if (!rl.allowed) return tooManyRequests(corsHeaders, rl.retryAfterSec);
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,

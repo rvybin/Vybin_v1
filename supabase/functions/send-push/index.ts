@@ -1,5 +1,7 @@
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, tooManyRequests } from "../_shared/rateLimit.ts";
+import { requireString } from "../_shared/validate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +12,32 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    // Require authentication — users can only push to themselves
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Rate limit: 10 manual pushes per user per hour
+    const rl = await checkRateLimit(`send-push:${user.id}`, 10, 3600);
+    if (!rl.allowed) return tooManyRequests(corsHeaders, rl.retryAfterSec);
+
     const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
     const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
     const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:hello@vybin.app";
@@ -20,17 +48,26 @@ Deno.serve(async (req: Request) => {
 
     webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-    // Use service role key so we can read push_subscriptions for any user
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const body = await req.json();
-    const { user_id, title, body: notifBody, url } = body;
+    const reqBody = await req.json();
+    const { user_id, title, body: notifBody, url } = reqBody;
 
-    if (!user_id) {
-      return new Response(JSON.stringify({ error: "user_id required" }), {
+    // user_id must match the authenticated user — no cross-user notification injection
+    if (!user_id || user_id !== user.id) {
+      return new Response(JSON.stringify({ error: "user_id must match authenticated user" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate notification fields
+    const titleErr = requireString(title, "title", 200);
+    if (titleErr) {
+      return new Response(JSON.stringify({ error: titleErr }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

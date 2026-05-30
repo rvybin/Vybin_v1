@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, tooManyRequests } from "../_shared/rateLimit.ts";
+import { isSafeExternalUrl } from "../_shared/validate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,8 +108,15 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { url } = await req.json();
-    if (!url || typeof url !== "string") {
+    // Rate limit: 30 lookups per user per hour
+    const rl = await checkRateLimit(`get-event-time:${user.id}`, 30, 3600);
+    if (!rl.allowed) return tooManyRequests(corsHeaders, rl.retryAfterSec);
+
+    const body = await req.json();
+    const { url } = body;
+
+    // SSRF protection: reject private/loopback IPs, non-HTTP(S) schemes, and oversized URLs
+    if (!isSafeExternalUrl(url)) {
       return new Response(JSON.stringify({ startTime: null, endTime: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -116,7 +125,7 @@ Deno.serve(async (req: Request) => {
     // Fetch the event page server-side
     let html: string;
     try {
-      const pageRes = await fetch(url, {
+      const pageRes = await fetch(url as string, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; Vybin/1.0)" },
         signal: AbortSignal.timeout(8000),
       });

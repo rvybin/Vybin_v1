@@ -1,5 +1,6 @@
 import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, tooManyRequests } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +34,10 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Rate limit: 5 checkout session creations per user per hour (prevents Stripe API abuse)
+    const rl = await checkRateLimit(`create-checkout:${user.id}`, 5, 3600);
+    if (!rl.allowed) return tooManyRequests(corsHeaders, rl.retryAfterSec);
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
       apiVersion: "2024-06-20",

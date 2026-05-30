@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, tooManyRequests } from "../_shared/rateLimit.ts";
+import { requireString } from "../_shared/validate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,9 +48,25 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { storagePath } = await req.json();
-    if (!storagePath) {
-      return new Response(JSON.stringify({ error: "storagePath is required" }), {
+    // Rate limit: 10 uploads per user per hour (Claude vision + storage cost)
+    const rl = await checkRateLimit(`parse-schedule:${user.id}`, 10, 3600);
+    if (!rl.allowed) return tooManyRequests(corsHeaders, rl.retryAfterSec);
+
+    const body = await req.json();
+    const { storagePath } = body;
+
+    // Validate storagePath — must be a non-empty string within a reasonable length
+    const pathErr = requireString(storagePath, "storagePath", 500);
+    if (pathErr) {
+      return new Response(JSON.stringify({ error: pathErr }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Reject path traversal attempts
+    if ((storagePath as string).includes("..") || (storagePath as string).startsWith("/")) {
+      return new Response(JSON.stringify({ error: "Invalid storagePath" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

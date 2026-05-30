@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, tooManyRequests } from "../_shared/rateLimit.ts";
+import { escapeHtml, requireString } from "../_shared/validate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,9 +19,30 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { submissionId } = await req.json();
-    if (!submissionId) {
-      return new Response(JSON.stringify({ error: "submissionId required" }), {
+    // Verify caller is an authenticated user
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Rate limit: 5 notification triggers per user per hour (prevents email spam)
+    const rl = await checkRateLimit(`notify-submission:${user.id}`, 5, 3600);
+    if (!rl.allowed) return tooManyRequests(corsHeaders, rl.retryAfterSec);
+
+    const body = await req.json();
+    const { submissionId } = body;
+
+    const idErr = requireString(submissionId, "submissionId", 100);
+    if (idErr) {
+      return new Response(JSON.stringify({ error: idErr }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -34,6 +57,8 @@ Deno.serve(async (req: Request) => {
       .from("event_submissions")
       .select("*")
       .eq("id", submissionId)
+      // Ensure the caller owns this submission — prevents triggering admin emails for others' submissions
+      .eq("submitted_by", user.id)
       .maybeSingle();
 
     if (error || !submission) {
@@ -44,13 +69,26 @@ Deno.serve(async (req: Request) => {
     }
 
     const secret = Deno.env.get("ADMIN_REVIEW_SECRET") ?? "";
-    const fnUrl = Deno.env.get("SUPABASE_URL")!.replace("/rest/v1", "") + "/functions/v1/review-event";
-    const approveUrl = `${fnUrl}?id=${submissionId}&action=approve&secret=${encodeURIComponent(secret)}`;
-    const rejectUrl = `${fnUrl}?id=${submissionId}&action=reject&secret=${encodeURIComponent(secret)}`;
+    const fnUrl = Deno.env.get("SUPABASE_FUNCTIONS_URL") ??
+      (Deno.env.get("SUPABASE_URL")!.replace("https://", "https://") + "/functions/v1");
+    const reviewBase = `${fnUrl}/review-event`;
+    const approveUrl = `${reviewBase}?id=${encodeURIComponent(submissionId)}&action=approve&secret=${encodeURIComponent(secret)}`;
+    const rejectUrl  = `${reviewBase}?id=${encodeURIComponent(submissionId)}&action=reject&secret=${encodeURIComponent(secret)}`;
 
     const date = submission.date
       ? new Date(submission.date).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" })
       : "Not specified";
+
+    // Escape all user-supplied content before inserting into HTML (XSS prevention)
+    const safeTitle = escapeHtml(submission.title ?? "");
+    const safeOrg   = escapeHtml(submission.organization ?? "");
+    const safeLoc   = escapeHtml(submission.location ?? "Not specified");
+    const safeType  = escapeHtml(submission.event_type ?? "Not specified");
+    const safeDesc  = submission.description ? escapeHtml(submission.description) : null;
+    const safeLink  = submission.link ? escapeHtml(submission.link) : null;
+    const safeTags  = submission.tags?.length
+      ? (submission.tags as string[]).map(escapeHtml).join(", ")
+      : null;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -63,41 +101,41 @@ Deno.serve(async (req: Request) => {
     </div>
     <div style="background:#fff;border-radius:0 0 16px 16px;padding:36px 40px;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
 
-      <h2 style="margin:0 0 4px;font-size:20px;font-weight:800;color:#111;">${submission.title}</h2>
-      <p style="margin:0 0 24px;font-size:13px;color:#888;">Submitted by ${submission.organization}</p>
+      <h2 style="margin:0 0 4px;font-size:20px;font-weight:800;color:#111;">${safeTitle}</h2>
+      <p style="margin:0 0 24px;font-size:13px;color:#888;">Submitted by ${safeOrg}</p>
 
       <table style="width:100%;border-collapse:collapse;border:1px solid #efefef;border-radius:12px;margin-bottom:24px;">
         <tr style="border-bottom:1px solid #efefef;">
           <td style="padding:11px 16px;color:#888;font-size:13px;width:40%;">Organization</td>
-          <td style="padding:11px 16px;color:#111;font-size:13px;font-weight:600;">${submission.organization}</td>
+          <td style="padding:11px 16px;color:#111;font-size:13px;font-weight:600;">${safeOrg}</td>
         </tr>
         <tr style="border-bottom:1px solid #efefef;">
           <td style="padding:11px 16px;color:#888;font-size:13px;">Date</td>
-          <td style="padding:11px 16px;color:#111;font-size:13px;font-weight:600;">${date}</td>
+          <td style="padding:11px 16px;color:#111;font-size:13px;font-weight:600;">${escapeHtml(date)}</td>
         </tr>
         <tr style="border-bottom:1px solid #efefef;">
           <td style="padding:11px 16px;color:#888;font-size:13px;">Location</td>
-          <td style="padding:11px 16px;color:#111;font-size:13px;font-weight:600;">${submission.location ?? "Not specified"}</td>
+          <td style="padding:11px 16px;color:#111;font-size:13px;font-weight:600;">${safeLoc}</td>
         </tr>
         <tr style="border-bottom:1px solid #efefef;">
           <td style="padding:11px 16px;color:#888;font-size:13px;">Type</td>
-          <td style="padding:11px 16px;color:#111;font-size:13px;font-weight:600;">${submission.event_type ?? "Not specified"}</td>
+          <td style="padding:11px 16px;color:#111;font-size:13px;font-weight:600;">${safeType}</td>
         </tr>
-        ${submission.link ? `<tr style="border-bottom:1px solid #efefef;"><td style="padding:11px 16px;color:#888;font-size:13px;">Link</td><td style="padding:11px 16px;font-size:13px;"><a href="${submission.link}" style="color:#ED1B2F;">${submission.link}</a></td></tr>` : ""}
-        ${submission.tags?.length ? `<tr><td style="padding:11px 16px;color:#888;font-size:13px;">Tags</td><td style="padding:11px 16px;color:#111;font-size:13px;">${submission.tags.join(", ")}</td></tr>` : ""}
+        ${safeLink ? `<tr style="border-bottom:1px solid #efefef;"><td style="padding:11px 16px;color:#888;font-size:13px;">Link</td><td style="padding:11px 16px;font-size:13px;"><a href="${safeLink}" style="color:#ED1B2F;">${safeLink}</a></td></tr>` : ""}
+        ${safeTags ? `<tr><td style="padding:11px 16px;color:#888;font-size:13px;">Tags</td><td style="padding:11px 16px;color:#111;font-size:13px;">${safeTags}</td></tr>` : ""}
       </table>
 
-      ${submission.description ? `
+      ${safeDesc ? `
       <div style="background:#fafafa;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
         <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;">Description</p>
-        <p style="margin:0;font-size:14px;color:#444;line-height:1.6;">${submission.description}</p>
+        <p style="margin:0;font-size:14px;color:#444;line-height:1.6;">${safeDesc}</p>
       </div>` : ""}
 
       <table style="width:100%;border-collapse:collapse;">
         <tr>
           <td style="padding-right:8px;">
             <a href="${approveUrl}" style="display:block;background:#16a34a;color:white;text-align:center;padding:14px;border-radius:12px;font-size:15px;font-weight:700;text-decoration:none;">
-              Approve & Publish
+              Approve &amp; Publish
             </a>
           </td>
           <td style="padding-left:8px;">
@@ -114,7 +152,14 @@ Deno.serve(async (req: Request) => {
 </html>`;
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
-    const adminEmail = Deno.env.get("ADMIN_EMAIL") ?? "vyasrohan07@gmail.com";
+    // ADMIN_EMAIL must be set in Supabase secrets — no hardcoded fallback
+    const adminEmail = Deno.env.get("ADMIN_EMAIL");
+    if (!adminEmail) {
+      console.warn("notify-submission: ADMIN_EMAIL not set, skipping email");
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (resendKey) {
       await fetch("https://api.resend.com/emails", {

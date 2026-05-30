@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, tooManyRequests } from "../_shared/rateLimit.ts";
+import { validateMessages } from "../_shared/validate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -122,7 +124,21 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { messages } = await req.json();
+    // Rate limit: 30 messages per user per hour
+    const rl = await checkRateLimit(`ai-assistant:${user.id}`, 30, 3600);
+    if (!rl.allowed) return tooManyRequests(corsHeaders, rl.retryAfterSec);
+
+    const body = await req.json();
+    const { messages } = body;
+
+    // Validate messages array before sending to Claude
+    const msgErr = validateMessages(messages);
+    if (msgErr) {
+      return new Response(JSON.stringify({ error: msgErr }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,

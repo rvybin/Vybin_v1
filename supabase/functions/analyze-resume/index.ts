@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, tooManyRequests } from "../_shared/rateLimit.ts";
+import { requireString } from "../_shared/validate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,9 +51,24 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { resumePdfBase64, jobDescription } = await req.json();
-    if (!resumePdfBase64 || !jobDescription?.trim()) {
-      return new Response(JSON.stringify({ error: "resumePdfBase64 and jobDescription are required" }), {
+    // Rate limit: 5 resume analyses per user per hour (Claude vision is expensive)
+    const rl = await checkRateLimit(`analyze-resume:${user.id}`, 5, 3600);
+    if (!rl.allowed) return tooManyRequests(corsHeaders, rl.retryAfterSec);
+
+    const body = await req.json();
+    const { resumePdfBase64, jobDescription } = body;
+
+    // Validate inputs — base64 PDF capped at ~7 MB (≈9.3 MB base64), JD capped at 5000 chars
+    const pdfErr = requireString(resumePdfBase64, "resumePdfBase64", 9_500_000);
+    if (pdfErr) {
+      return new Response(JSON.stringify({ error: pdfErr }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const jdErr = requireString(jobDescription, "jobDescription", 5000);
+    if (jdErr) {
+      return new Response(JSON.stringify({ error: jdErr }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

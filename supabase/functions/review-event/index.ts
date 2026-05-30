@@ -1,25 +1,29 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { escapeHtml } from "../_shared/validate.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+// All arguments must already be HTML-safe (no user input)
 function htmlPage(title: string, message: string, color: string) {
+  const icon = color === "#16a34a" ? "&#10003;" : "&#10005;";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${title}</title>
+  <title>${escapeHtml(title)}</title>
 </head>
 <body style="margin:0;padding:0;background:#f6f7f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;">
   <div style="text-align:center;max-width:400px;padding:40px 24px;">
-    <div style="width:64px;height:64px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;">
-      ${color === "#16a34a" ? "✓" : "✕"}
+    <div style="width:64px;height:64px;border-radius:50%;background:${escapeHtml(color)};display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;">
+      ${icon}
     </div>
-    <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#111;">${title}</h1>
-    <p style="margin:0;font-size:15px;color:#666;line-height:1.6;">${message}</p>
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#111;">${escapeHtml(title)}</h1>
+    <p style="margin:0;font-size:15px;color:#666;line-height:1.6;">${escapeHtml(message)}</p>
     <p style="margin:24px 0 0;font-size:12px;color:#aaa;">Vybin Admin</p>
   </div>
 </body>
@@ -28,6 +32,16 @@ function htmlPage(title: string, message: string, color: string) {
 
 Deno.serve(async (req: Request) => {
   try {
+    // IP-based rate limit: 20 review actions per hour per IP (brute-force protection on secret)
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const rl = await checkRateLimit(`review-event:ip:${clientIp}`, 20, 3600);
+    if (!rl.allowed) {
+      return new Response(htmlPage("Too Many Requests", "Please slow down.", "#888"), {
+        status: 429,
+        headers: { "Content-Type": "text/html", "Retry-After": String(rl.retryAfterSec) },
+      });
+    }
+
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const action = url.searchParams.get("action");
@@ -87,7 +101,7 @@ Deno.serve(async (req: Request) => {
         .eq("id", id);
 
       return new Response(
-        htmlPage("Event Published!", `"${submission.title}" by ${submission.organization} is now live on Vybin.`, "#16a34a"),
+        htmlPage("Event Published!", `"${submission.title ?? ""}" by ${submission.organization ?? ""} is now live on Vybin.`, "#16a34a"),
         { headers: { "Content-Type": "text/html" } }
       );
     }
@@ -99,7 +113,7 @@ Deno.serve(async (req: Request) => {
         .eq("id", id);
 
       return new Response(
-        htmlPage("Event Rejected", `"${submission.title}" has been rejected and will not be published.`, "#dc2626"),
+        htmlPage("Event Rejected", `"${submission.title ?? ""}" has been rejected and will not be published.`, "#dc2626"),
         { headers: { "Content-Type": "text/html" } }
       );
     }
