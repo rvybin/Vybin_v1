@@ -234,7 +234,7 @@ const termsSections = [
       },
       {
         type: "contact" as const,
-        lines: ["Vybin", "Email: hello@vybin.org", "Montréal, Québec, Canada"],
+        lines: ["Vybin", "Email: vybinorg@gmail.com", "Montréal, Québec, Canada"],
       },
     ],
   },

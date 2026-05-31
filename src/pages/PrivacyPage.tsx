@@ -13,7 +13,7 @@ const privacySections = [
       },
       {
         type: "contact" as const,
-        lines: ["Vybin", "Email: hello@vybin.org", "Montréal, Québec, Canada"],
+        lines: ["Vybin", "Email: vybinorg@gmail.com", "Montréal, Québec, Canada"],
       },
     ],
   },
@@ -157,7 +157,7 @@ const privacySections = [
       },
       {
         type: "p" as const,
-        text: "To exercise any of these rights, contact us at hello@vybin.org. We will respond within 30 days.",
+        text: "To exercise any of these rights, contact us at vybinorg@gmail.com. We will respond within 30 days.",
       },
     ],
   },
@@ -219,7 +219,7 @@ const privacySections = [
       },
       {
         type: "contact" as const,
-        lines: ["Vybin — Privacy", "Email: hello@vybin.org", "Montréal, Québec, Canada"],
+        lines: ["Vybin — Privacy", "Email: vybinorg@gmail.com", "Montréal, Québec, Canada"],
       },
     ],
   },
